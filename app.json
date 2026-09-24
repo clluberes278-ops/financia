@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Financia",
+    "slug": "financia",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.kal.financia"
+    },
+    "android": {
+      "package": "com.kal.financia"
+    },
+    "plugins": [
+      "expo-sharing"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "64ba0a9b-65f9-48ba-a92d-2f66c1d6fa41"
+      }
+    }
+  }
+}
