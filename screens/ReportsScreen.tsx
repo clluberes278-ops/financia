@@ -27,6 +27,8 @@ import {
   getMonthlyTrend,
 } from '../utils/calculations';
 import { CATEGORY_LABELS, Category } from '../types/transaction';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { useTranslation } from '../utils/translations';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -34,6 +36,8 @@ const PIE_COLORS = ['#4F46E5','#10B981','#F59E0B','#EF4444','#3B82F6','#8B5CF6',
 
 export default function ReportsScreen() {
   const { transactions } = useTransactionStore();
+  const accentColor = useSettingsStore((state) => state.accentColor);
+  const { t } = useTranslation();
 
   const availableMonths = getAvailableMonths(transactions);
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(0);
@@ -68,7 +72,7 @@ export default function ReportsScreen() {
     value: total,
     color: PIE_COLORS[i % PIE_COLORS.length],
     text: CATEGORY_LABELS[category as Category]?.emoji ?? '',
-    label: CATEGORY_LABELS[category as Category]?.label ?? category,
+    label: t(CATEGORY_LABELS[category as Category]?.label ?? category),
   }));
 
   const expenseRatio = monthIncome > 0 ? Math.min(100, Math.round((monthExpenses / monthIncome) * 100)) : 100;
@@ -91,7 +95,7 @@ export default function ReportsScreen() {
     try {
       await exportReportAsPdf(monthTransactions, currentMonthData.year, currentMonthData.month);
     } catch (err) {
-      Alert.alert('Error', 'No se pudo generar el PDF. Inténtalo de nuevo.');
+      Alert.alert(t('Error'), t('No se pudo generar el PDF. Inténtalo de nuevo.'));
     } finally {
       setIsExporting(false);
     }
@@ -115,7 +119,7 @@ export default function ReportsScreen() {
           </Pressable>
 
           <View style={styles.periodCenter}>
-            <Text style={styles.periodLabel}>Período de análisis</Text>
+            <Text style={styles.periodLabel}>{t('Período de análisis')}</Text>
             <Text style={styles.periodTitle}>{currentMonthData.label}</Text>
           </View>
 
@@ -130,21 +134,21 @@ export default function ReportsScreen() {
 
         {/* Botón Exportar PDF */}
         <Pressable
-          style={[styles.exportButton, isExporting && styles.exportButtonDisabled]}
+          style={[styles.exportButton, { backgroundColor: accentColor, shadowColor: accentColor }, isExporting && styles.exportButtonDisabled]}
           onPress={handleExport}
           disabled={isExporting}
         >
           {isExporting ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={styles.exportButtonText}>📄 Exportar PDF</Text>
+            <Text style={styles.exportButtonText}>📄 {t('Exportar PDF')}</Text>
           )}
         </Pressable>
 
         {/* Resumen Ejecutivo del Mes */}
         <View style={styles.executiveCard}>
           <View style={styles.cardHeaderRow}>
-            <Text style={styles.executiveSubtitle}>BALANCE MENSUAL</Text>
+              <Text style={styles.executiveSubtitle}>{t('BALANCE MENSUAL')}</Text>
             <View
               style={[
                 styles.savingsBadge,
@@ -175,14 +179,14 @@ export default function ReportsScreen() {
           {/* Comparativa Ingresos vs Gastos */}
           <View style={styles.splitRow}>
             <View style={styles.splitItem}>
-              <Text style={styles.splitLabel}>Ingresos</Text>
+              <Text style={styles.splitLabel}>{t('Ingresos')}</Text>
               <Text style={styles.splitIncome} numberOfLines={1}>
                 {formatCurrency(monthIncome)}
               </Text>
             </View>
             <View style={styles.splitDivider} />
             <View style={styles.splitItem}>
-              <Text style={styles.splitLabel}>Gastos</Text>
+              <Text style={styles.splitLabel}>{t('Gastos')}</Text>
               <Text style={styles.splitExpense} numberOfLines={1}>
                 {formatCurrency(monthExpenses)}
               </Text>
@@ -193,7 +197,7 @@ export default function ReportsScreen() {
           {monthIncome > 0 && (
             <View style={styles.ratioSection}>
               <View style={styles.ratioHeader}>
-                <Text style={styles.ratioLabel}>Uso del ingreso</Text>
+                <Text style={styles.ratioLabel}>{t('Uso del ingreso')}</Text>
                 <Text style={styles.ratioPercent}>{expenseRatio}% gastado</Text>
               </View>
               <View style={styles.ratioTrack}>
@@ -212,7 +216,7 @@ export default function ReportsScreen() {
         </View>
 
         {/* Indicadores Clave (KPIs) */}
-        <Text style={styles.sectionTitle}>Métricas Inteligentes</Text>
+        <Text style={styles.sectionTitle}>{t('Métricas Inteligentes')}</Text>
         <View style={styles.kpiGrid}>
           {/* Promedio diario */}
           <View style={styles.kpiCard}>
@@ -220,7 +224,7 @@ export default function ReportsScreen() {
             <Text style={styles.kpiValue} numberOfLines={1}>
               {formatCurrency(dailyAverage)}
             </Text>
-            <Text style={styles.kpiLabel}>Gasto promedio / día</Text>
+            <Text style={styles.kpiLabel}>{t('Gasto promedio / día')}</Text>
           </View>
 
           {/* Tasa de ahorro */}
@@ -229,7 +233,7 @@ export default function ReportsScreen() {
             <Text style={styles.kpiValue} numberOfLines={1}>
               {savingsRate}%
             </Text>
-            <Text style={styles.kpiLabel}>Tasa de ahorro mensual</Text>
+            <Text style={styles.kpiLabel}>{t('Tasa de ahorro mensual')}</Text>
           </View>
 
           {/* Mayor gasto */}
@@ -249,14 +253,14 @@ export default function ReportsScreen() {
             <Text style={styles.kpiValue} numberOfLines={1}>
               {monthTransactions.length}
             </Text>
-            <Text style={styles.kpiLabel}>Movimientos en el mes</Text>
+            <Text style={styles.kpiLabel}>{t('Movimientos en el mes')}</Text>
           </View>
         </View>
 
         {/* Gráfica de dona: Gastos por categoría */}
         {byCategory.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>Distribución visual de gastos</Text>
+            <Text style={styles.sectionTitle}>{t('Distribución visual de gastos')}</Text>
             <View style={styles.chartCard}>
               <View style={styles.pieRow}>
                 <PieChart
@@ -270,7 +274,7 @@ export default function ReportsScreen() {
                       <Text style={styles.pieCenterValue} numberOfLines={1}>
                         {byCategory.length}
                       </Text>
-                      <Text style={styles.pieCenterSub}>categ.</Text>
+                      <Text style={styles.pieCenterSub}>{t('categ.')}</Text>
                     </View>
                   )}
                 />
@@ -290,20 +294,20 @@ export default function ReportsScreen() {
         )}
 
         {/* Gráfica de línea: Tendencia mensual (6 meses) */}
-        <Text style={styles.sectionTitle}>Tendencia de gastos (6 meses)</Text>
+        <Text style={styles.sectionTitle}>{t('Tendencia de gastos (6 meses)')}</Text>
         <View style={styles.chartCard}>
           {monthlyTrend.every((d) => d.value === 0) ? (
             <View style={styles.chartEmpty}>
-              <Text style={styles.chartEmptyText}>Sin datos de tendencia aún</Text>
+              <Text style={styles.chartEmptyText}>{t('Sin datos de tendencia aún')}</Text>
             </View>
           ) : (
             <LineChart
               data={monthlyTrend}
-              color={'#4F46E5'}
+              color={accentColor}
               thickness={3}
-              dataPointsColor={'#4F46E5'}
+              dataPointsColor={accentColor}
               dataPointsRadius={5}
-              startFillColor={'#4F46E5'}
+              startFillColor={accentColor}
               endFillColor={'#F8FAFC'}
               startOpacity={0.2}
               endOpacity={0.01}
@@ -323,11 +327,11 @@ export default function ReportsScreen() {
         </View>
 
         {/* Desglose de Gastos por Categoría */}
-        <Text style={styles.sectionTitle}>Gastos por Categoría</Text>
+        <Text style={styles.sectionTitle}>{t('Gastos por Categoría')}</Text>
         {byCategory.length === 0 ? (
           <View style={styles.emptyStateCard}>
             <Text style={styles.emptyEmoji}>🍃</Text>
-            <Text style={styles.emptyTitle}>Sin gastos en {currentMonthData.label}</Text>
+            <Text style={styles.emptyTitle}>{t('Sin gastos en')} {currentMonthData.label}</Text>
             <Text style={styles.emptySubtitle}>
               No se han registrado gastos para el período seleccionado.
             </Text>
@@ -373,7 +377,7 @@ export default function ReportsScreen() {
         {/* Últimas operaciones del período */}
         {monthTransactions.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>Detalle del período ({monthTransactions.length})</Text>
+            <Text style={styles.sectionTitle}>{t('Detalle del período')} ({monthTransactions.length})</Text>
             <View style={styles.transactionsListCard}>
               {monthTransactions.map((t) => {
                 const isIncome = t.type === 'ingreso';

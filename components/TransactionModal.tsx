@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { Category, CATEGORY_LABELS, TransactionType } from '../types/transaction';
 import { useTransactionStore } from '../store/useTransactionStore';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { useTranslation } from '../utils/translations';
 
 interface TransactionModalProps {
   visible: boolean;
@@ -30,6 +32,8 @@ export default function TransactionModal({
   initialType = 'gasto',
 }: TransactionModalProps) {
   const addTransaction = useTransactionStore((s) => s.addTransaction);
+  const accentColor = useSettingsStore((s) => s.accentColor);
+  const { t } = useTranslation();
 
   const [type, setType] = useState<TransactionType>(initialType);
   const [amount, setAmount] = useState('');
@@ -95,7 +99,7 @@ export default function TransactionModal({
               {/* Encabezado */}
               <View style={styles.header}>
                 <View>
-                  <Text style={styles.title}>Registrar Movimiento</Text>
+                  <Text style={styles.title}>{t('Registrar Movimiento')}</Text>
                   <Text style={styles.subtitle}>Financia Smart Bank</Text>
                 </View>
                 <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
@@ -158,16 +162,16 @@ export default function TransactionModal({
                 {QUICK_AMOUNTS.map((val) => (
                   <Pressable
                     key={val}
-                    style={styles.quickAmountBadge}
+                    style={[styles.quickAmountBadge, { borderColor: accentColor }]}
                     onPress={() => handleAddQuickAmount(val)}
                   >
-                    <Text style={styles.quickAmountText}>+{val.toLocaleString()}</Text>
+                    <Text style={[styles.quickAmountText, { color: accentColor }]}>+{val.toLocaleString()}</Text>
                   </Pressable>
                 ))}
               </View>
 
               {/* Selector de Categorías */}
-              <Text style={styles.sectionLabel}>Categoría</Text>
+                <Text style={styles.sectionLabel}>{t('Categoría')}</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -192,7 +196,7 @@ export default function TransactionModal({
                           isSelected && styles.categoryNameActive,
                         ]}
                       >
-                        {CATEGORY_LABELS[c].label}
+                        {t(CATEGORY_LABELS[c].label)}
                       </Text>
                     </Pressable>
                   );
@@ -200,10 +204,10 @@ export default function TransactionModal({
               </ScrollView>
 
               {/* Campo de Nota / Concepto */}
-              <Text style={styles.sectionLabel}>Concepto o detalle</Text>
+              <Text style={styles.sectionLabel}>{t('Concepto o detalle')}</Text>
               <TextInput
                 style={styles.noteInput}
-                placeholder="Ej. Supermercado, Pago de nómina, Uber..."
+                placeholder={t('Ej. Supermercado, Pago de nómina, Uber...')}
                 placeholderTextColor="#94A3B8"
                 value={note}
                 onChangeText={setNote}
@@ -215,12 +219,13 @@ export default function TransactionModal({
                 style={({ pressed }) => [
                   styles.saveButton,
                   type === 'ingreso' ? styles.saveButtonIncome : styles.saveButtonExpense,
+                  type === 'gasto' && { backgroundColor: accentColor },
                   pressed && styles.buttonPressed,
                 ]}
                 onPress={handleSubmit}
               >
                 <Text style={styles.saveButtonText}>
-                  Guardar {type === 'ingreso' ? 'Ingreso' : 'Gasto'}
+                  {type === 'ingreso' ? t('Guardar Ingreso') : t('Guardar Gasto')}
                 </Text>
               </Pressable>
             </View>

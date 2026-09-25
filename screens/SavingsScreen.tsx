@@ -17,6 +17,8 @@ import { useSavingsStore } from '../store/useSavingsStore';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { SavingsPocket } from '../types/savings';
 import { formatCurrency, calculateBalance } from '../utils/calculations';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { useTranslation } from '../utils/translations';
 
 const POPULAR_EMOJIS = ['📱', '🚗', '🛡️', '🏖️', '💻', '🏠', '🎓', '🎁', '🎮', '🐖'];
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000];
@@ -25,6 +27,8 @@ export default function SavingsScreen() {
   const { pockets, isLoaded, loadPockets, createPocket, depositToPocket, withdrawFromPocket, deletePocket } =
     useSavingsStore();
   const { transactions, addTransaction } = useTransactionStore();
+  const accentColor = useSettingsStore((state) => state.accentColor);
+  const { t } = useTranslation();
 
   const mainBalance = calculateBalance(transactions);
 
@@ -174,7 +178,7 @@ export default function SavingsScreen() {
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeader}>
             <View>
-              <Text style={styles.summaryBadgeTitle}>BOLSAS & METAS DE AHORRO</Text>
+              <Text style={styles.summaryBadgeTitle}>{t('BOLSAS & METAS DE AHORRO')}</Text>
               <Text style={styles.summaryMainAmount}>{formatCurrency(totalSaved)}</Text>
             </View>
             <View style={styles.countBadge}>
@@ -185,7 +189,7 @@ export default function SavingsScreen() {
           {totalTarget > 0 && (
             <View style={styles.summaryProgressSection}>
               <View style={styles.summaryProgressLabels}>
-                <Text style={styles.summaryTargetText}>Objetivo global: {formatCurrency(totalTarget)}</Text>
+                <Text style={styles.summaryTargetText}>{t('Objetivo global')}: {formatCurrency(totalTarget)}</Text>
                 <Text style={styles.summaryPercentText}>{globalProgress}%</Text>
               </View>
               <View style={styles.summaryBarBg}>
@@ -195,16 +199,16 @@ export default function SavingsScreen() {
           )}
 
           <Pressable
-            style={styles.newPocketPrimaryBtn}
+            style={[styles.newPocketPrimaryBtn, { backgroundColor: accentColor }]}
             onPress={() => setCreateModalVisible(true)}
           >
-            <Text style={styles.newPocketPrimaryBtnText}>＋ Crear Nuevo Bolsillo de Ahorro</Text>
+            <Text style={styles.newPocketPrimaryBtnText}>＋ {t('Crear Nuevo Bolsillo de Ahorro')}</Text>
           </Pressable>
         </View>
 
         {/* Listado de Bolsillos */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Tus Cuentas de Ahorro</Text>
+          <Text style={styles.sectionTitle}>{t('Tus Cuentas de Ahorro')}</Text>
         </View>
 
         {pockets.length === 0 ? (
@@ -212,16 +216,16 @@ export default function SavingsScreen() {
             <View style={styles.emptyCircle}>
               <Text style={styles.emptyIcon}>🎯</Text>
             </View>
-            <Text style={styles.emptyHeading}>Separa tu dinero con metas fijas</Text>
+            <Text style={styles.emptyHeading}>{t('Separa tu dinero con metas fijas')}</Text>
             <Text style={styles.emptySubheading}>
               Crea bolsillos específicos para no mezclar tu dinero: "Mi próximo celular",
               "Transporte", "Ahorro de emergencia" o "Vacaciones".
             </Text>
             <Pressable
-              style={styles.emptyCreateBtn}
+              style={[styles.emptyCreateBtn, { backgroundColor: accentColor }]}
               onPress={() => setCreateModalVisible(true)}
             >
-              <Text style={styles.emptyCreateBtnText}>＋ Crear mi primer bolsillo</Text>
+              <Text style={styles.emptyCreateBtnText}>＋ {t('Crear mi primer bolsillo')}</Text>
             </Pressable>
           </View>
         ) : (
@@ -268,17 +272,17 @@ export default function SavingsScreen() {
                   {/* Monto actual y faltante en columnas organizadas */}
                   <View style={styles.pocketAmountsRow}>
                     <View style={{ flex: 1, marginRight: 8 }}>
-                      <Text style={styles.pocketAmountLabel}>Ahorrado</Text>
+                      <Text style={styles.pocketAmountLabel}>{t('Ahorrado')}</Text>
                       <Text style={styles.pocketCurrentAmount} numberOfLines={1}>
                         {formatCurrency(pocket.currentAmount)}
                       </Text>
                     </View>
                     <View style={styles.pocketRemainingCol}>
-                      <Text style={styles.pocketRemainingLabel}>Estado</Text>
+                      <Text style={styles.pocketRemainingLabel}>{t('Estado')}</Text>
                       <Text style={styles.pocketRemaining} numberOfLines={1}>
                         {isCompleted
-                          ? 'Completado'
-                          : `Falta ${formatCurrency(pocket.targetAmount - pocket.currentAmount)}`}
+                          ? t('Completado')
+                          : `${t('Falta')} ${formatCurrency(pocket.targetAmount - pocket.currentAmount)}`}
                       </Text>
                     </View>
                   </View>
@@ -289,7 +293,7 @@ export default function SavingsScreen() {
                         styles.pocketBarFill,
                         {
                           width: `${progress}%`,
-                          backgroundColor: isCompleted ? '#10B981' : isAlmostDone ? '#F59E0B' : '#4F46E5',
+                          backgroundColor: isCompleted ? '#10B981' : isAlmostDone ? '#F59E0B' : accentColor,
                         },
                       ]}
                     />
@@ -298,17 +302,17 @@ export default function SavingsScreen() {
                   {/* Botones de Acción (Abonar / Retirar) */}
                   <View style={styles.pocketActionsRow}>
                     <Pressable
-                      style={styles.actionAbonarBtn}
+                      style={[styles.actionAbonarBtn, { borderColor: accentColor }]}
                       onPress={() => handleOpenActionModal(pocket, 'abonar')}
                     >
-                      <Text style={styles.actionAbonarText}>＋ Abonar</Text>
+                      <Text style={[styles.actionAbonarText, { color: accentColor }]}>＋ {t('Abonar')}</Text>
                     </Pressable>
 
                     <Pressable
                       style={styles.actionRetirarBtn}
                       onPress={() => handleOpenActionModal(pocket, 'retirar')}
                     >
-                      <Text style={styles.actionRetirarText}>− Retirar</Text>
+                      <Text style={styles.actionRetirarText}>− {t('Retirar')}</Text>
                     </Pressable>
 
                     <Pressable
@@ -343,19 +347,19 @@ export default function SavingsScreen() {
                 <View style={styles.modalHandle} />
 
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Nuevo Bolsillo de Ahorro</Text>
+                  <Text style={styles.modalTitle}>{t('Nuevo Bolsillo de Ahorro')}</Text>
                   <Pressable onPress={() => setCreateModalVisible(false)} style={styles.modalCloseBtn}>
                     <Text style={styles.modalCloseText}>✕</Text>
                   </Pressable>
                 </View>
 
                 {/* Selector de Emoji */}
-                <Text style={styles.modalInputLabel}>Ícono representativo</Text>
+                <Text style={styles.modalInputLabel}>{t('Ícono representativo')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiScroll}>
                   {POPULAR_EMOJIS.map((emoji) => (
                     <Pressable
                       key={emoji}
-                      style={[styles.emojiChip, selectedEmoji === emoji && styles.emojiChipActive]}
+                      style={[styles.emojiChip, selectedEmoji === emoji && styles.emojiChipActive, selectedEmoji === emoji && { borderColor: accentColor }]}
                       onPress={() => setSelectedEmoji(emoji)}
                     >
                       <Text style={styles.emojiChipText}>{emoji}</Text>
@@ -364,7 +368,7 @@ export default function SavingsScreen() {
                 </ScrollView>
 
                 {/* Nombre */}
-                <Text style={styles.modalInputLabel}>Nombre de la cuenta o meta</Text>
+                <Text style={styles.modalInputLabel}>{t('Nombre de la cuenta o meta')}</Text>
                 <TextInput
                   style={styles.modalInput}
                   placeholder="Ej. Mi próximo celular, Fondo Transporte..."
@@ -375,7 +379,7 @@ export default function SavingsScreen() {
                 />
 
                 {/* Meta fija */}
-                <Text style={styles.modalInputLabel}>Meta fija en pesos (RD$)</Text>
+                <Text style={styles.modalInputLabel}>{t('Meta fija en pesos (RD$)')}</Text>
                 <View style={styles.amountInputContainer}>
                   <Text style={styles.amountPrefix}>RD$</Text>
                   <TextInput
@@ -388,8 +392,8 @@ export default function SavingsScreen() {
                   />
                 </View>
 
-                <Pressable style={styles.modalSubmitBtn} onPress={handleCreatePocket}>
-                  <Text style={styles.modalSubmitBtnText}>Crear Bolsillo</Text>
+                <Pressable style={[styles.modalSubmitBtn, { backgroundColor: accentColor }]} onPress={handleCreatePocket}>
+                  <Text style={styles.modalSubmitBtnText}>{t('Crear Bolsillo')}</Text>
                 </Pressable>
               </View>
             </KeyboardAvoidingView>

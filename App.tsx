@@ -8,10 +8,16 @@ import DashboardScreen from './screens/DashboardScreen';
 import TransactionsScreen from './screens/TransactionsScreen';
 import SavingsScreen from './screens/SavingsScreen';
 import ReportsScreen from './screens/ReportsScreen';
+import SettingsScreen from './screens/SettingsScreen';
+import { useTranslation } from './utils/translations';
+import { useSettingsStore } from './store/useSettingsStore';
 
 const Tab = createBottomTabNavigator();
 
 export default function App() {
+  const { t } = useTranslation();
+  const accentColor = useSettingsStore((state) => state.accentColor);
+
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
@@ -30,7 +36,7 @@ export default function App() {
               letterSpacing: -0.3,
             },
             headerTintColor: '#FFFFFF',
-            tabBarActiveTintColor: '#4F46E5',
+            tabBarActiveTintColor: accentColor,
             tabBarInactiveTintColor: '#94A3B8',
             tabBarStyle: {
               backgroundColor: '#FFFFFF',
@@ -49,8 +55,8 @@ export default function App() {
             name="Dashboard"
             component={DashboardScreen}
             options={{
-              title: 'Financia Smart Bank',
-              tabBarLabel: 'Inicio',
+              title: t('Financia Smart Bank'),
+              tabBarLabel: t('Inicio'),
               tabBarIcon: ({ focused }) => (
                 <Text style={{ fontSize: 20 }}>{focused ? '💳' : '🏦'}</Text>
               ),
@@ -60,8 +66,8 @@ export default function App() {
             name="Transacciones"
             component={TransactionsScreen}
             options={{
-              title: 'Movimientos',
-              tabBarLabel: 'Movimientos',
+              title: t('Movimientos'),
+              tabBarLabel: t('Movimientos'),
               tabBarIcon: ({ focused }) => (
                 <Text style={{ fontSize: 20 }}>{focused ? '💸' : '📄'}</Text>
               ),
@@ -71,8 +77,8 @@ export default function App() {
             name="Ahorro"
             component={SavingsScreen}
             options={{
-              title: 'Bolsillos & Ahorro',
-              tabBarLabel: 'Ahorro',
+              title: t('Bolsillos & Ahorro'),
+              tabBarLabel: t('Ahorro'),
               tabBarIcon: ({ focused }) => (
                 <Text style={{ fontSize: 20 }}>{focused ? '🎯' : '🐖'}</Text>
               ),
@@ -82,10 +88,21 @@ export default function App() {
             name="Informes"
             component={ReportsScreen}
             options={{
-              title: 'Informes Financieros',
-              tabBarLabel: 'Informes',
+              title: t('Informes Financieros'),
+              tabBarLabel: t('Informes'),
               tabBarIcon: ({ focused }) => (
                 <Text style={{ fontSize: 20 }}>{focused ? '📈' : '📊'}</Text>
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Configuración"
+            component={SettingsScreen}
+            options={{
+              title: t('Configuración'),
+              tabBarLabel: t('Ajustes'),
+              tabBarIcon: ({ focused }) => (
+                <Text style={{ fontSize: 20 }}>{focused ? '⚙️' : '🔧'}</Text>
               ),
             }}
           />

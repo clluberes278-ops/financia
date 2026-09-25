@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { View, TextInput, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { Category, CATEGORY_LABELS, TransactionType } from '../types/transaction';
 import { useTransactionStore } from '../store/useTransactionStore';
+import { useTranslation } from '../utils/translations';
 
 const CATEGORIES = Object.keys(CATEGORY_LABELS) as Category[];
 
 export default function TransactionForm({ onDone }: { onDone?: () => void }) {
   const addTransaction = useTransactionStore((s) => s.addTransaction);
+  const { t } = useTranslation();
 
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<TransactionType>('gasto');
@@ -38,13 +40,13 @@ export default function TransactionForm({ onDone }: { onDone?: () => void }) {
           style={[styles.typeButton, type === 'gasto' && styles.typeButtonActiveExpense]}
           onPress={() => setType('gasto')}
         >
-          <Text style={type === 'gasto' ? styles.typeTextActive : styles.typeText}>Gasto</Text>
+          <Text style={type === 'gasto' ? styles.typeTextActive : styles.typeText}>{t('Gastos')}</Text>
         </Pressable>
         <Pressable
           style={[styles.typeButton, type === 'ingreso' && styles.typeButtonActiveIncome]}
           onPress={() => setType('ingreso')}
         >
-          <Text style={type === 'ingreso' ? styles.typeTextActive : styles.typeText}>Ingreso</Text>
+          <Text style={type === 'ingreso' ? styles.typeTextActive : styles.typeText}>{t('Ingresos')}</Text>
         </Pressable>
       </View>
 
@@ -64,7 +66,7 @@ export default function TransactionForm({ onDone }: { onDone?: () => void }) {
             onPress={() => setCategory(c)}
           >
             <Text>
-              {CATEGORY_LABELS[c].emoji} {CATEGORY_LABELS[c].label}
+              {CATEGORY_LABELS[c].emoji} {t(CATEGORY_LABELS[c].label)}
             </Text>
           </Pressable>
         ))}

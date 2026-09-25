@@ -11,12 +11,16 @@ import { useTransactionStore } from '../store/useTransactionStore';
 import { CATEGORY_LABELS, TransactionType } from '../types/transaction';
 import { formatCurrency, formatDate } from '../utils/calculations';
 import TransactionModal from '../components/TransactionModal';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { useTranslation } from '../utils/translations';
 
 type FilterType = 'todos' | 'gasto' | 'ingreso';
 
 export default function TransactionsScreen() {
   const { transactions, deleteTransaction, clearAllTransactions } =
     useTransactionStore();
+  const accentColor = useSettingsStore((state) => state.accentColor);
+  const { t } = useTranslation();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<TransactionType>('gasto');
@@ -29,12 +33,12 @@ export default function TransactionsScreen() {
 
   const handleConfirmDelete = (id: string, note?: string) => {
     Alert.alert(
-      'Eliminar transacción',
-      `¿Deseas eliminar este registro${note ? ` ("${note}")` : ''}?`,
+      t('Eliminar transacción'),
+      `${t('¿Deseas eliminar este registro')}${note ? ` ("${note}")` : ''}?`,
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('Cancelar'), style: 'cancel' },
         {
-          text: 'Eliminar',
+          text: t('Eliminar'),
           style: 'destructive',
           onPress: () => deleteTransaction(id),
         },
@@ -44,12 +48,12 @@ export default function TransactionsScreen() {
 
   const handleConfirmClear = () => {
     Alert.alert(
-      'Restablecer historial',
-      '¿Estás seguro de que deseas eliminar todas las transacciones?',
+      t('Restablecer historial'),
+      t('¿Estás seguro de que deseas eliminar todas las transacciones?'),
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('Cancelar'), style: 'cancel' },
         {
-          text: 'Borrar todo',
+          text: t('Borrar todo'),
           style: 'destructive',
           onPress: () => clearAllTransactions(),
         },
@@ -73,10 +77,10 @@ export default function TransactionsScreen() {
       {/* Barra superior de acciones */}
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.topTitle}>Historial Smart</Text>
+          <Text style={styles.topTitle}>{t('Historial Smart')}</Text>
           <Text style={styles.topSubtitle}>
             {filteredTransactions.length}{' '}
-            {filteredTransactions.length === 1 ? 'movimiento' : 'movimientos'}
+            {filteredTransactions.length === 1 ? t('movimiento') : t('movimientos')}
           </Text>
         </View>
 
@@ -104,7 +108,7 @@ export default function TransactionsScreen() {
               filter === 'todos' && styles.filterChipTextActive,
             ]}
           >
-            Todos ({transactions.length})
+            {t('Todos')} ({transactions.length})
           </Text>
         </Pressable>
 
@@ -118,7 +122,7 @@ export default function TransactionsScreen() {
               filter === 'gasto' && styles.filterChipTextActive,
             ]}
           >
-            📉 Gastos
+            📉 {t('Gastos')}
           </Text>
         </Pressable>
 
@@ -132,7 +136,7 @@ export default function TransactionsScreen() {
               filter === 'ingreso' && styles.filterChipTextActive,
             ]}
           >
-            📈 Ingresos
+            📈 {t('Ingresos')}
           </Text>
         </Pressable>
       </View>
@@ -148,17 +152,17 @@ export default function TransactionsScreen() {
             <View style={styles.emptyIconCircle}>
               <Text style={styles.emptyIcon}>💳</Text>
             </View>
-            <Text style={styles.emptyTitle}>Sin movimientos aún</Text>
+            <Text style={styles.emptyTitle}>{t('Sin movimientos aún')}</Text>
             <Text style={styles.emptyDescription}>
               Comienza a llevar el control financiero de tu Smart Bank registrando tus
               ingresos y gastos diarios.
             </Text>
 
             <Pressable
-              style={styles.emptyPrimaryBtn}
+              style={[styles.emptyPrimaryBtn, { backgroundColor: accentColor }]}
               onPress={() => handleOpenModal('gasto')}
             >
-              <Text style={styles.emptyPrimaryBtnText}>➕ Registrar movimiento</Text>
+              <Text style={styles.emptyPrimaryBtnText}>➕ {t('Registrar movimiento')}</Text>
             </Pressable>
           </View>
         }
@@ -182,7 +186,7 @@ export default function TransactionsScreen() {
                 </View>
 
                 <View style={styles.cardInfo}>
-                  <Text style={styles.categoryLabel}>{catInfo.label}</Text>
+                  <Text style={styles.categoryLabel}>{t(catInfo.label)}</Text>
                   {item.note ? (
                     <Text style={styles.transactionNote} numberOfLines={1}>
                       {item.note}
@@ -201,7 +205,7 @@ export default function TransactionsScreen() {
                   hitSlop={8}
                   onPress={() => handleConfirmDelete(item.id, item.note)}
                 >
-                  <Text style={styles.deleteActionText}>Eliminar</Text>
+                  <Text style={styles.deleteActionText}>{t('Eliminar')}</Text>
                 </Pressable>
               </View>
             </View>
@@ -211,7 +215,7 @@ export default function TransactionsScreen() {
 
       {/* Botón Flotante de Acción Rápida (FAB) */}
       <Pressable
-        style={({ pressed }) => [styles.fabButton, pressed && styles.fabPressed]}
+        style={({ pressed }) => [styles.fabButton, { backgroundColor: accentColor }, pressed && styles.fabPressed]}
         onPress={() => handleOpenModal('gasto')}
       >
         <Text style={styles.fabIcon}>＋</Text>

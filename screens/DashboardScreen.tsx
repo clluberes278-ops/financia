@@ -23,19 +23,28 @@ import {
 import { CATEGORY_LABELS } from '../types/transaction';
 
 import { useSavingsStore } from '../store/useSavingsStore';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { useTranslation } from '../utils/translations';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function DashboardScreen() {
   const { transactions, loadTransactions, isLoaded } = useTransactionStore();
+  const { t } = useTranslation();
   const { pockets, loadPockets, isLoaded: savingsLoaded } = useSavingsStore();
+  const { accentColor, hideBalanceByDefault, isLoaded: settingsLoaded, loadSettings } = useSettingsStore();
   const [hideBalance, setHideBalance] = useState(false);
 
   // Carga los datos guardados una sola vez al montar
   useEffect(() => {
     if (!isLoaded) loadTransactions();
     if (!savingsLoaded) loadPockets();
-  }, [isLoaded, savingsLoaded]);
+    if (!settingsLoaded) loadSettings();
+  }, [isLoaded, savingsLoaded, settingsLoaded]);
+
+  useEffect(() => {
+    if (settingsLoaded) setHideBalance(hideBalanceByDefault);
+  }, [settingsLoaded, hideBalanceByDefault]);
 
   const balance = calculateBalance(transactions);
   const income = calculateTotalIncome(transactions);
@@ -87,7 +96,7 @@ export default function DashboardScreen() {
           </View>
 
           {/* Saldo Disponible */}
-          <Text style={styles.balanceLabel}>Saldo disponible</Text>
+            <Text style={styles.balanceLabel}>{t('Saldo disponible')}</Text>
           <Text style={styles.balanceAmount}>
             {hideBalance ? '••••••••' : formatCurrency(balance)}
           </Text>
@@ -95,14 +104,14 @@ export default function DashboardScreen() {
           {/* Fila de Ingresos y Gastos */}
           <View style={styles.cardStatsRow}>
             <View style={styles.statCol}>
-              <Text style={styles.statLabel}>Ingresos</Text>
+              <Text style={styles.statLabel}>{t('Ingresos')}</Text>
               <Text style={styles.incomeStat}>
                 {hideBalance ? '••••' : `+ ${formatCurrency(income)}`}
               </Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statCol}>
-              <Text style={styles.statLabel}>Gastos</Text>
+              <Text style={styles.statLabel}>{t('Gastos')}</Text>
               <Text style={styles.expenseStat}>
                 {hideBalance ? '••••' : `- ${formatCurrency(expenses)}`}
               </Text>
@@ -120,7 +129,7 @@ export default function DashboardScreen() {
               </Text>
             </View>
             <View style={styles.savingsPill}>
-              <Text style={styles.savingsPillText}>
+              <Text style={[styles.savingsPillText, { color: accentColor }]}>
                 {pockets.length} {pockets.length === 1 ? 'meta' : 'metas'}
               </Text>
             </View>
@@ -128,7 +137,7 @@ export default function DashboardScreen() {
 
           {/* Bloque de Total Apartado */}
           <View style={styles.savingsMainBlock}>
-            <Text style={styles.savingsAmountLabel}>Total apartado en bolsillos</Text>
+            <Text style={styles.savingsAmountLabel}>{t('Total apartado en bolsillos')}</Text>
             <Text style={styles.savingsMainAmount} numberOfLines={1}>
               {hideBalance ? '••••••••' : formatCurrency(totalInPockets)}
             </Text>
@@ -137,7 +146,7 @@ export default function DashboardScreen() {
           {totalTargetInPockets > 0 ? (
             <View style={styles.savingsProgressSection}>
               <View style={styles.savingsMetaRow}>
-                <Text style={styles.savingsProgressPct}>{pocketsProgress}% completado</Text>
+                <Text style={[styles.savingsProgressPct, { color: accentColor }]}>{pocketsProgress}% completado</Text>
                 <Text style={styles.savingsMetaTarget} numberOfLines={1}>
                   Meta: {hideBalance ? '••••' : formatCurrency(totalTargetInPockets)}
                 </Text>
@@ -148,7 +157,7 @@ export default function DashboardScreen() {
                     styles.savingsProgressBarFill,
                     {
                       width: `${pocketsProgress}%`,
-                      backgroundColor: pocketsProgress >= 100 ? '#10B981' : '#4F46E5',
+                      backgroundColor: pocketsProgress >= 100 ? '#10B981' : accentColor,
                     },
                   ]}
                 />
@@ -164,11 +173,11 @@ export default function DashboardScreen() {
         {/* Widget de Salud Financiera y Resumen */}
         <View style={styles.healthWidget}>
           <View style={styles.healthHeader}>
-            <Text style={styles.healthTitle}>Salud Financiera</Text>
+            <Text style={styles.healthTitle}>{t('Salud Financiera')}</Text>
             <View style={[styles.statusBadge, { backgroundColor: `${status.color}18` }]}>
               <View style={[styles.statusDot, { backgroundColor: status.color }]} />
               <Text style={[styles.statusText, { color: status.color }]} numberOfLines={1}>
-                {status.label}
+                {t(status.label)}
               </Text>
             </View>
           </View>
@@ -176,33 +185,33 @@ export default function DashboardScreen() {
           <View style={styles.healthStatsRow}>
             <View style={styles.healthStatItem}>
               <Text style={styles.healthStatNumber}>{savingsRate}%</Text>
-              <Text style={styles.healthStatLabel}>Tasa ahorro</Text>
+              <Text style={styles.healthStatLabel}>{t('Tasa ahorro')}</Text>
             </View>
 
             <View style={styles.healthDivider} />
 
             <View style={styles.healthStatItem}>
               <Text style={styles.healthStatNumber}>{transactions.length}</Text>
-              <Text style={styles.healthStatLabel}>Operaciones</Text>
+              <Text style={styles.healthStatLabel}>{t('Operaciones')}</Text>
             </View>
 
             <View style={styles.healthDivider} />
 
             <View style={styles.healthStatItem}>
               <Text style={styles.healthStatNumber}>{byCategory.length}</Text>
-              <Text style={styles.healthStatLabel}>Categorías</Text>
+              <Text style={styles.healthStatLabel}>{t('Categorías')}</Text>
             </View>
           </View>
         </View>
 
         {/* Sección: Gráfica de barras semanal */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Gastos esta semana</Text>
+          <Text style={styles.sectionTitle}>{t('Gastos esta semana')}</Text>
         </View>
         <View style={styles.chartCard}>
           {weeklyData.every((d) => d.value === 0) ? (
             <View style={styles.chartEmpty}>
-              <Text style={styles.chartEmptyText}>Sin gastos registrados esta semana</Text>
+              <Text style={styles.chartEmptyText}>{t('Sin gastos registrados esta semana')}</Text>
             </View>
           ) : (
             <BarChart
@@ -228,7 +237,7 @@ export default function DashboardScreen() {
 
         {/* Sección: Gastos por Categoría */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Distribución de gastos</Text>
+          <Text style={styles.sectionTitle}>{t('Distribución de gastos')}</Text>
           {byCategory.length > 0 && (
             <Text style={styles.sectionMeta}>{byCategory.length} categorías</Text>
           )}
@@ -236,7 +245,7 @@ export default function DashboardScreen() {
 
         {byCategory.length === 0 ? (
           <View style={styles.emptyCardMini}>
-            <Text style={styles.emptyTextMini}>No hay gastos registrados en el historial</Text>
+            <Text style={styles.emptyTextMini}>{t('No hay gastos registrados en el historial')}</Text>
           </View>
         ) : (
           <View style={styles.categoriesCard}>
@@ -247,7 +256,7 @@ export default function DashboardScreen() {
                 <View key={category} style={styles.categoryItem}>
                   <View style={styles.categoryInfoRow}>
                     <Text style={styles.categoryName}>
-                      {cat.emoji} {cat.label}
+                      {cat.emoji} {t(cat.label)}
                     </Text>
                     <View style={styles.categoryAmountRow}>
                       <Text style={styles.categoryPercent}>{percent}%</Text>
@@ -255,7 +264,7 @@ export default function DashboardScreen() {
                     </View>
                   </View>
                   <View style={styles.barBackground}>
-                    <View style={[styles.barFill, { width: `${percent}%` }]} />
+                    <View style={[styles.barFill, { width: `${percent}%`, backgroundColor: accentColor }]} />
                   </View>
                 </View>
               );
@@ -265,24 +274,24 @@ export default function DashboardScreen() {
 
         {/* Sección: Últimas Transacciones */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Actividad reciente</Text>
+          <Text style={styles.sectionTitle}>{t('Actividad reciente')}</Text>
         </View>
 
         {recent.length === 0 ? (
           <View style={styles.emptyCardMini}>
-            <Text style={styles.emptyTextMini}>Sin movimientos recientes</Text>
+            <Text style={styles.emptyTextMini}>{t('Sin movimientos recientes')}</Text>
           </View>
         ) : (
           <View style={styles.recentList}>
-            {recent.map((t) => {
-              const isIncome = t.type === 'ingreso';
-              const cat = CATEGORY_LABELS[t.category] || {
-                label: t.category,
+            {recent.map((transaction) => {
+              const isIncome = transaction.type === 'ingreso';
+              const cat = CATEGORY_LABELS[transaction.category] || {
+                label: transaction.category,
                 emoji: '🏷️',
               };
 
               return (
-                <View key={t.id} style={styles.recentItem}>
+                <View key={transaction.id} style={styles.recentItem}>
                   <View style={styles.recentLeft}>
                     <View
                       style={[
@@ -293,10 +302,10 @@ export default function DashboardScreen() {
                       <Text style={styles.recentEmoji}>{cat.emoji}</Text>
                     </View>
                     <View>
-                      <Text style={styles.recentCategory}>{cat.label}</Text>
+                      <Text style={styles.recentCategory}>{t(cat.label)}</Text>
                       <Text style={styles.recentDate}>
-                        {t.note ? `${t.note} • ` : ''}
-                        {formatDate(t.date)}
+                        {transaction.note ? `${transaction.note} • ` : ''}
+                        {formatDate(transaction.date)}
                       </Text>
                     </View>
                   </View>
@@ -305,7 +314,7 @@ export default function DashboardScreen() {
                       isIncome ? styles.recentIncomeAmount : styles.recentExpenseAmount
                     }
                   >
-                    {isIncome ? '+' : '-'} {formatCurrency(t.amount)}
+                    {isIncome ? '+' : '-'} {formatCurrency(transaction.amount)}
                   </Text>
                 </View>
               );

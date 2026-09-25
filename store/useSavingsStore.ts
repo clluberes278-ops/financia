@@ -12,6 +12,7 @@ interface SavingsStore {
   depositToPocket: (id: string, amount: number) => Promise<void>;
   withdrawFromPocket: (id: string, amount: number) => Promise<void>;
   deletePocket: (id: string) => Promise<void>;
+  clearAllPockets: () => Promise<void>;
 }
 
 async function persist(pockets: SavingsPocket[]) {
@@ -69,5 +70,10 @@ export const useSavingsStore = create<SavingsStore>((set, get) => ({
     const updated = get().pockets.filter((p) => p.id !== id);
     set({ pockets: updated });
     await persist(updated);
+  },
+  
+  clearAllPockets: async () => {
+    set({ pockets: [] });
+    await persist([]);
   },
 }));
