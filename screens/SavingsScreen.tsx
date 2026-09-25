@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View,
-  Text,
+  Text as NativeText,
   StyleSheet,
   ScrollView,
   Pressable,
@@ -19,15 +19,19 @@ import { SavingsPocket } from '../types/savings';
 import { formatCurrency, calculateBalance } from '../utils/calculations';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
+import { getThemeColors, ThemedText } from '../utils/theme';
 
 const POPULAR_EMOJIS = ['📱', '🚗', '🛡️', '🏖️', '💻', '🏠', '🎓', '🎁', '🎮', '🐖'];
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000];
+const Text = ThemedText;
 
 export default function SavingsScreen() {
   const { pockets, isLoaded, loadPockets, createPocket, depositToPocket, withdrawFromPocket, deletePocket } =
     useSavingsStore();
   const { transactions, addTransaction } = useTransactionStore();
   const accentColor = useSettingsStore((state) => state.accentColor);
+  const appTheme = useSettingsStore((state) => state.theme);
+  const theme = getThemeColors(appTheme);
   const { t } = useTranslation();
 
   const mainBalance = calculateBalance(transactions);
@@ -42,6 +46,8 @@ export default function SavingsScreen() {
   const [selectedPocket, setSelectedPocket] = useState<SavingsPocket | null>(null);
   const [actionType, setActionType] = useState<'abonar' | 'retirar'>('abonar');
   const [actionAmount, setActionAmount] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
 
   useEffect(() => {
     if (!isLoaded) loadPockets();
@@ -62,16 +68,22 @@ export default function SavingsScreen() {
       return;
     }
 
-    await createPocket({
-      name: newPocketName.trim(),
-      targetAmount: target,
-      emoji: selectedEmoji,
-    });
+    setIsCreating(true);
+    try {
+      await createPocket({
+        name: newPocketName.trim(),
+        targetAmount: target,
+        emoji: selectedEmoji,
+      });
 
-    setNewPocketName('');
-    setNewPocketTarget('');
-    setSelectedEmoji('📱');
-    setCreateModalVisible(false);
+      Keyboard.dismiss();
+      setNewPocketName('');
+      setNewPocketTarget('');
+      setSelectedEmoji('📱');
+      setCreateModalVisible(false);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleOpenActionModal = (pocket: SavingsPocket, type: 'abonar' | 'retirar') => {
@@ -89,54 +101,61 @@ export default function SavingsScreen() {
       return;
     }
 
-    if (actionType === 'abonar') {
-      if (amount > mainBalance) {
-        Alert.alert(
-          'Saldo insuficiente',
-          `No tienes suficiente saldo disponible en tu cuenta principal (${formatCurrency(mainBalance)}) para abonar ${formatCurrency(amount)}.`
-        );
-        return;
+    setIsProcessingAction(true);
+
+    try {
+      if (actionType === 'abonar') {
+        if (amount > mainBalance) {
+          Alert.alert(
+            'Saldo insuficiente',
+            `No tienes suficiente saldo disponible en tu cuenta principal (${formatCurrency(mainBalance)}) para abonar ${formatCurrency(amount)}.`
+          );
+          return;
+        }
+
+        // 1. Agregar a los ahorros del bolsillo
+        await depositToPocket(selectedPocket.id, amount);
+
+        // 2. Restar de la cuenta principal registrando la salida hacia ahorro
+        await addTransaction({
+          amount,
+          type: 'gasto',
+          category: 'ahorro',
+          date: new Date().toISOString(),
+          note: `Abono a bolsillo: ${selectedPocket.name}`,
+        });
+
+        const newAmount = selectedPocket.currentAmount + amount;
+        if (newAmount >= selectedPocket.targetAmount) {
+          Alert.alert('🏆 ¡Meta Cumplida!', `¡Felicidades! Has completado tu meta para "${selectedPocket.name}".`);
+        } else if (newAmount >= selectedPocket.targetAmount * 0.8) {
+          Alert.alert('🔔 ¡A punto de llegar!', `Estás a un paso de alcanzar tu meta para "${selectedPocket.name}".`);
+        }
+      } else {
+        if (amount > selectedPocket.currentAmount) {
+          Alert.alert('Monto excesivo', `Solo tienes ${formatCurrency(selectedPocket.currentAmount)} en este bolsillo.`);
+          return;
+        }
+
+        // 1. Retirar del bolsillo
+        await withdrawFromPocket(selectedPocket.id, amount);
+
+        // 2. Regresar a la cuenta principal como ingreso
+        await addTransaction({
+          amount,
+          type: 'ingreso',
+          category: 'ahorro',
+          date: new Date().toISOString(),
+          note: `Retiro de bolsillo: ${selectedPocket.name}`,
+        });
       }
 
-      // 1. Agregar a los ahorros del bolsillo
-      await depositToPocket(selectedPocket.id, amount);
-
-      // 2. Restar de la cuenta principal registrando la salida hacia ahorro
-      await addTransaction({
-        amount,
-        type: 'gasto',
-        category: 'ahorro',
-        date: new Date().toISOString(),
-        note: `Abono a bolsillo: ${selectedPocket.name}`,
-      });
-
-      const newAmount = selectedPocket.currentAmount + amount;
-      if (newAmount >= selectedPocket.targetAmount) {
-        Alert.alert('🏆 ¡Meta Cumplida!', `¡Felicidades! Has completado tu meta para "${selectedPocket.name}".`);
-      } else if (newAmount >= selectedPocket.targetAmount * 0.8) {
-        Alert.alert('🔔 ¡A punto de llegar!', `Estás a un paso de alcanzar tu meta para "${selectedPocket.name}".`);
-      }
-    } else {
-      if (amount > selectedPocket.currentAmount) {
-        Alert.alert('Monto excesivo', `Solo tienes ${formatCurrency(selectedPocket.currentAmount)} en este bolsillo.`);
-        return;
-      }
-
-      // 1. Retirar del bolsillo
-      await withdrawFromPocket(selectedPocket.id, amount);
-
-      // 2. Regresar a la cuenta principal como ingreso
-      await addTransaction({
-        amount,
-        type: 'ingreso',
-        category: 'ahorro',
-        date: new Date().toISOString(),
-        note: `Retiro de bolsillo: ${selectedPocket.name}`,
-      });
+      Keyboard.dismiss();
+      setActionModalVisible(false);
+      setActionAmount('');
+    } finally {
+      setIsProcessingAction(false);
     }
-
-    setActionModalVisible(false);
-    setActionAmount('');
   };
 
   const handleDeletePocket = (pocket: SavingsPocket) => {
@@ -168,18 +187,18 @@ export default function SavingsScreen() {
   };
 
   return (
-    <View style={styles.screenWrapper}>
+    <View style={[styles.screenWrapper, { backgroundColor: theme.background }]}>
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: theme.background }]}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
         {/* Tarjeta de Resumen Global de Bolsillos */}
-        <View style={styles.summaryCard}>
+        <View style={[styles.summaryCard, { backgroundColor: theme.header, borderColor: theme.border }]}>
           <View style={styles.summaryHeader}>
             <View>
               <Text style={styles.summaryBadgeTitle}>{t('BOLSAS & METAS DE AHORRO')}</Text>
-              <Text style={styles.summaryMainAmount}>{formatCurrency(totalSaved)}</Text>
+              <Text style={styles.summaryMainAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{formatCurrency(totalSaved)}</Text>
             </View>
             <View style={styles.countBadge}>
               <Text style={styles.countBadgeText}>{pockets.length} {pockets.length === 1 ? 'meta' : 'metas'}</Text>
@@ -212,7 +231,7 @@ export default function SavingsScreen() {
         </View>
 
         {pockets.length === 0 ? (
-          <View style={styles.emptyContainer}>
+          <View style={[styles.emptyContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <View style={styles.emptyCircle}>
               <Text style={styles.emptyIcon}>🎯</Text>
             </View>
@@ -236,7 +255,7 @@ export default function SavingsScreen() {
               const isAlmostDone = !isCompleted && progress >= 80;
 
               return (
-                <View key={pocket.id} style={styles.pocketCard}>
+                <View key={pocket.id} style={[styles.pocketCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                   {/* Encabezado del bolsillo */}
                   <View style={styles.pocketTopRow}>
                     <View style={styles.pocketTitleGroup}>
@@ -273,7 +292,7 @@ export default function SavingsScreen() {
                   <View style={styles.pocketAmountsRow}>
                     <View style={{ flex: 1, marginRight: 8 }}>
                       <Text style={styles.pocketAmountLabel}>{t('Ahorrado')}</Text>
-                      <Text style={styles.pocketCurrentAmount} numberOfLines={1}>
+                      <Text style={styles.pocketCurrentAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                         {formatCurrency(pocket.currentAmount)}
                       </Text>
                     </View>
@@ -343,12 +362,12 @@ export default function SavingsScreen() {
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
               style={styles.modalKeyboardBox}
             >
-              <View style={styles.modalSheet}>
-                <View style={styles.modalHandle} />
+              <View style={[styles.modalSheet, { backgroundColor: theme.surface }]}>
+                <View style={[styles.modalHandle, { backgroundColor: theme.border }]} />
 
-                <View style={styles.modalHeader}>
+                  <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>{t('Nuevo Bolsillo de Ahorro')}</Text>
-                  <Pressable onPress={() => setCreateModalVisible(false)} style={styles.modalCloseBtn}>
+                  <Pressable onPress={() => setCreateModalVisible(false)} style={[styles.modalCloseBtn, { backgroundColor: theme.surfaceMuted }]}>
                     <Text style={styles.modalCloseText}>✕</Text>
                   </Pressable>
                 </View>
@@ -370,30 +389,37 @@ export default function SavingsScreen() {
                 {/* Nombre */}
                 <Text style={styles.modalInputLabel}>{t('Nombre de la cuenta o meta')}</Text>
                 <TextInput
-                  style={styles.modalInput}
+                  style={[styles.modalInput, { backgroundColor: theme.surfaceMuted, borderColor: theme.border, color: theme.text }]}
                   placeholder="Ej. Mi próximo celular, Fondo Transporte..."
                   placeholderTextColor="#94A3B8"
                   value={newPocketName}
                   onChangeText={setNewPocketName}
+                  returnKeyType="next"
                   maxLength={30}
                 />
 
                 {/* Meta fija */}
                 <Text style={styles.modalInputLabel}>{t('Meta fija en pesos (RD$)')}</Text>
-                <View style={styles.amountInputContainer}>
+                <View style={[styles.amountInputContainer, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}>
                   <Text style={styles.amountPrefix}>RD$</Text>
                   <TextInput
-                    style={styles.amountField}
+                    style={[styles.amountField, { color: theme.text }]}
                     placeholder="0.00"
                     placeholderTextColor="#94A3B8"
                     keyboardType="decimal-pad"
                     value={newPocketTarget}
                     onChangeText={setNewPocketTarget}
+                    returnKeyType="done"
+                    onSubmitEditing={handleCreatePocket}
                   />
                 </View>
 
-                <Pressable style={[styles.modalSubmitBtn, { backgroundColor: accentColor }]} onPress={handleCreatePocket}>
-                  <Text style={styles.modalSubmitBtnText}>{t('Crear Bolsillo')}</Text>
+                <Pressable
+                  style={[styles.modalSubmitBtn, { backgroundColor: accentColor }, isCreating && styles.disabledButton]}
+                  onPress={handleCreatePocket}
+                  disabled={isCreating}
+                >
+                  <Text style={styles.modalSubmitBtnText}>{isCreating ? 'Guardando...' : t('Crear Bolsillo')}</Text>
                 </Pressable>
               </View>
             </KeyboardAvoidingView>
@@ -414,42 +440,44 @@ export default function SavingsScreen() {
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
               style={styles.modalKeyboardBox}
             >
-              <View style={styles.modalSheet}>
-                <View style={styles.modalHandle} />
+              <View style={[styles.modalSheet, { backgroundColor: theme.surface }]}>
+                <View style={[styles.modalHandle, { backgroundColor: theme.border }]} />
 
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>
                     {actionType === 'abonar' ? 'Abonar a ' : 'Retirar de '}
                     {selectedPocket?.name}
                   </Text>
-                  <Pressable onPress={() => setActionModalVisible(false)} style={styles.modalCloseBtn}>
+                  <Pressable onPress={() => setActionModalVisible(false)} style={[styles.modalCloseBtn, { backgroundColor: theme.surfaceMuted }]}>
                     <Text style={styles.modalCloseText}>✕</Text>
                   </Pressable>
                 </View>
 
-                <View style={styles.modalAccountInfoRow}>
-                  <Text style={styles.modalSubtitle}>
+                <View style={[styles.modalAccountInfoRow, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}>
+                  <Text style={[styles.modalSubtitle, { color: theme.text }]}>
                     {actionType === 'abonar'
                       ? `Saldo disponible en cuenta: ${formatCurrency(mainBalance)}`
                       : `Disponible en bolsillo: ${formatCurrency(selectedPocket?.currentAmount || 0)}`}
                   </Text>
                   {actionType === 'abonar' && (
-                    <Text style={styles.modalSubtitleSub}>
+                    <Text style={[styles.modalSubtitleSub, { color: theme.textSecondary }]}>
                       Ahorrado actualmente: {formatCurrency(selectedPocket?.currentAmount || 0)} / {formatCurrency(selectedPocket?.targetAmount || 0)}
                     </Text>
                   )}
                 </View>
 
-                <View style={styles.amountInputContainer}>
+                <View style={[styles.amountInputContainer, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}>
                   <Text style={styles.amountPrefix}>RD$</Text>
                   <TextInput
-                    style={styles.amountField}
+                    style={[styles.amountField, { color: theme.text }]}
                     placeholder="0.00"
                     placeholderTextColor="#94A3B8"
                     keyboardType="decimal-pad"
                     value={actionAmount}
                     onChangeText={setActionAmount}
                     autoFocus={true}
+                    returnKeyType="done"
+                    onSubmitEditing={handleConfirmAction}
                   />
                 </View>
 
@@ -459,7 +487,7 @@ export default function SavingsScreen() {
                     {QUICK_AMOUNTS.map((val) => (
                       <Pressable
                         key={val}
-                        style={styles.quickChip}
+                        style={[styles.quickChip, { backgroundColor: `${accentColor}18`, borderColor: `${accentColor}55` }]}
                         onPress={() => {
                           const curr = parseFloat(actionAmount.replace(',', '.')) || 0;
                           setActionAmount((curr + val).toString());
@@ -475,11 +503,13 @@ export default function SavingsScreen() {
                   style={[
                     styles.modalSubmitBtn,
                     actionType === 'retirar' && { backgroundColor: '#EF4444' },
+                    isProcessingAction && styles.disabledButton,
                   ]}
                   onPress={handleConfirmAction}
+                  disabled={isProcessingAction}
                 >
                   <Text style={styles.modalSubmitBtnText}>
-                    Confirmar {actionType === 'abonar' ? 'Abono' : 'Retiro'}
+                    {isProcessingAction ? 'Procesando...' : `Confirmar ${actionType === 'abonar' ? 'Abono' : 'Retiro'}`}
                   </Text>
                 </Pressable>
               </View>
@@ -977,6 +1007,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 14,
     alignItems: 'center',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   modalSubmitBtnText: {
     color: '#FFFFFF',

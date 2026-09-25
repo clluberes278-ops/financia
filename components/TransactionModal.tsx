@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Modal,
   View,
-  Text,
+  Text as NativeText,
   TextInput,
   Pressable,
   StyleSheet,
@@ -16,6 +16,9 @@ import { Category, CATEGORY_LABELS, TransactionType } from '../types/transaction
 import { useTransactionStore } from '../store/useTransactionStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
+import { ThemedText } from '../utils/theme';
+
+const Text = ThemedText;
 
 interface TransactionModalProps {
   visible: boolean;
@@ -41,6 +44,8 @@ export default function TransactionModal({
     initialType === 'ingreso' ? 'salario' : 'comida'
   );
   const [note, setNote] = useState('');
+  const [amountError, setAmountError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sincronizar tipo cuando cambia initialType
   React.useEffect(() => {
@@ -64,19 +69,30 @@ export default function TransactionModal({
 
   const handleSubmit = async () => {
     const numericAmount = parseFloat(amount.replace(',', '.'));
-    if (isNaN(numericAmount) || numericAmount <= 0) return;
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setAmountError('Ingresa un monto mayor que cero.');
+      return;
+    }
 
-    await addTransaction({
-      amount: numericAmount,
-      type,
-      category,
-      date: new Date().toISOString(),
-      note: note.trim() || undefined,
-    });
+    setAmountError('');
+    setIsSubmitting(true);
 
-    setAmount('');
-    setNote('');
-    onClose();
+    try {
+      await addTransaction({
+        amount: numericAmount,
+        type,
+        category,
+        date: new Date().toISOString(),
+        note: note.trim() || undefined,
+      });
+
+      Keyboard.dismiss();
+      setAmount('');
+      setNote('');
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -149,13 +165,25 @@ export default function TransactionModal({
                 <TextInput
                   style={styles.amountInput}
                   placeholder="0.00"
+                  accessibilityLabel="Monto"
                   placeholderTextColor="#94A3B8"
                   keyboardType="decimal-pad"
+                  returnKeyType="next"
                   value={amount}
-                  onChangeText={setAmount}
+                  onChangeText={(value) => {
+                    setAmount(value.replace(/[^0-9.,]/g, ''));
+                    if (amountError) setAmountError('');
+                  }}
+                  onBlur={() => {
+                    const numericAmount = parseFloat(amount.replace(',', '.'));
+                    if (amount && (!Number.isFinite(numericAmount) || numericAmount <= 0)) {
+                      setAmountError('Ingresa un monto mayor que cero.');
+                    }
+                  }}
                   autoFocus={false}
                 />
               </View>
+              {amountError ? <Text style={styles.errorText}>{amountError}</Text> : null}
 
               {/* Botones de incremento rápido */}
               <View style={styles.quickAmountsRow}>
@@ -208,9 +236,12 @@ export default function TransactionModal({
               <TextInput
                 style={styles.noteInput}
                 placeholder={t('Ej. Supermercado, Pago de nómina, Uber...')}
+                accessibilityLabel={t('Concepto o detalle')}
                 placeholderTextColor="#94A3B8"
                 value={note}
                 onChangeText={setNote}
+                returnKeyType="done"
+                onSubmitEditing={Keyboard.dismiss}
                 maxLength={45}
               />
 
@@ -220,12 +251,14 @@ export default function TransactionModal({
                   styles.saveButton,
                   type === 'ingreso' ? styles.saveButtonIncome : styles.saveButtonExpense,
                   type === 'gasto' && { backgroundColor: accentColor },
+                  isSubmitting && styles.disabledButton,
                   pressed && styles.buttonPressed,
                 ]}
                 onPress={handleSubmit}
+                disabled={isSubmitting}
               >
                 <Text style={styles.saveButtonText}>
-                  {type === 'ingreso' ? t('Guardar Ingreso') : t('Guardar Gasto')}
+                  {isSubmitting ? 'Guardando...' : type === 'ingreso' ? t('Guardar Ingreso') : t('Guardar Gasto')}
                 </Text>
               </Pressable>
             </View>
@@ -453,5 +486,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.3,
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: -8,
+    marginBottom: 10,
   },
 });

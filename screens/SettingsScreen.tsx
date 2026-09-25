@@ -1,15 +1,18 @@
 import React, { useEffect } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text as NativeText, View } from 'react-native';
 import { useSavingsStore } from '../store/useSavingsStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { useTranslation } from '../utils/translations';
+import { getThemeColors, ThemedText } from '../utils/theme';
 
 const ACCENT_COLORS = ['#4F46E5', '#0F766E', '#C2410C', '#BE123C', '#0369A1'];
+const Text = ThemedText;
 
 export default function SettingsScreen() {
   const settings = useSettingsStore();
   const { t } = useTranslation();
+  const theme = getThemeColors(settings.theme);
   const clearAllTransactions = useTransactionStore((state) => state.clearAllTransactions);
   const clearAllPockets = useSavingsStore((state) => state.clearAllPockets);
 
@@ -36,37 +39,37 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.screen, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <View style={styles.intro}>
         <View style={[styles.iconCircle, { backgroundColor: settings.accentColor }]}><Text style={styles.icon}>⚙️</Text></View>
         <View style={styles.introText}>
-          <Text style={styles.heading}>{t('Tu espacio, tus reglas')}</Text>
-          <Text style={styles.description}>{t('Personaliza Financia para que se adapte a tu forma de organizar el dinero.')}</Text>
+          <Text style={[styles.heading, { color: theme.text }]}>{t('Tu espacio, tus reglas')}</Text>
+          <Text style={[styles.description, { color: theme.textSecondary }]}>{t('Personaliza Financia para que se adapte a tu forma de organizar el dinero.')}</Text>
         </View>
       </View>
 
       <Text style={styles.sectionTitle}>{t('General')}</Text>
-      <View style={styles.card}>
-        <Text style={styles.rowLabel}>{t('Idioma')}</Text>
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <Text style={[styles.rowLabel, { color: theme.text }]}>{t('Idioma')}</Text>
         <View style={styles.optionRow}>
           {(['es', 'en'] as const).map((language) => (
             <Pressable
               key={language}
-              style={[styles.languageOption, settings.language === language && { backgroundColor: settings.accentColor }]}
+              style={[styles.languageOption, { backgroundColor: theme.surfaceMuted }, settings.language === language && { backgroundColor: settings.accentColor }]}
               onPress={() => settings.setLanguage(language)}
             >
-              <Text style={[styles.languageText, settings.language === language && styles.activeOptionText]}>
+              <Text style={[styles.languageText, { color: theme.textSecondary }, settings.language === language && styles.activeOptionText]}>
                 {language === 'es' ? 'Español' : 'English'}
               </Text>
             </Pressable>
           ))}
         </View>
-        <Text style={styles.helperText}>{t('La preferencia queda guardada para futuras sesiones.')}</Text>
+        <Text style={[styles.helperText, { color: theme.textSecondary }]}>{t('La preferencia queda guardada para futuras sesiones.')}</Text>
       </View>
 
       <Text style={styles.sectionTitle}>{t('Personalización')}</Text>
-      <View style={styles.card}>
-        <Text style={styles.rowLabel}>{t('Color de acento')}</Text>
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <Text style={[styles.rowLabel, { color: theme.text }]}>{t('Color de acento')}</Text>
         <View style={styles.colorRow}>
           {ACCENT_COLORS.map((color) => (
             <Pressable
@@ -75,6 +78,20 @@ export default function SettingsScreen() {
               style={[styles.colorButton, { backgroundColor: color }, settings.accentColor === color && styles.selectedColor]}
               onPress={() => settings.setAccentColor(color)}
             />
+          ))}
+        </View>
+        <Text style={[styles.rowLabel, { color: theme.text, marginTop: 2 }]}>{t('Tema')}</Text>
+        <View style={styles.optionRow}>
+          {(['light', 'dark'] as const).map((themeOption) => (
+            <Pressable
+              key={themeOption}
+              style={[styles.languageOption, { backgroundColor: theme.surfaceMuted }, settings.theme === themeOption && { backgroundColor: settings.accentColor }]}
+              onPress={() => settings.setTheme(themeOption)}
+            >
+              <Text style={[styles.languageText, { color: theme.textSecondary }, settings.theme === themeOption && styles.activeOptionText]}>
+                {themeOption === 'light' ? t('Claro') : t('Oscuro')}
+              </Text>
+            </Pressable>
           ))}
         </View>
         <SettingRow
@@ -87,7 +104,7 @@ export default function SettingsScreen() {
       </View>
 
       <Text style={styles.sectionTitle}>{t('Avisos y privacidad')}</Text>
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <SettingRow
           label={t('Recordatorios')}
           description={t('Activa avisos para mantener tus movimientos al día.')}
@@ -100,7 +117,7 @@ export default function SettingsScreen() {
           <View style={styles.dangerIcon}><Text>🗑️</Text></View>
           <View style={styles.rowCopy}>
             <Text style={styles.dangerLabel}>{t('Borrar todos los datos')}</Text>
-            <Text style={styles.helperText}>{t('Movimientos y bolsillos guardados en este dispositivo.')}</Text>
+              <Text style={[styles.helperText, { color: theme.textSecondary }]}>{t('Movimientos y bolsillos guardados en este dispositivo.')}</Text>
           </View>
           <Text style={styles.chevron}>›</Text>
         </Pressable>

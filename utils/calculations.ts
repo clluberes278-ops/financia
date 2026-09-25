@@ -19,7 +19,7 @@ export function calculateTotalIncome(transactions: Transaction[]): number {
 
 export function calculateTotalExpenses(transactions: Transaction[]): number {
   return transactions
-    .filter((t) => t.type === 'gasto')
+    .filter((t) => t.type === 'gasto' && t.category !== 'ahorro')
     .reduce((sum, t) => sum + t.amount, 0);
 }
 
@@ -210,7 +210,7 @@ export function getMonthlyTrend(
     const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     result.push({
       value: Math.round(total),
-      dataPointText: total > 0 ? `${Math.round(total / 1000)}K` : '',
+      dataPointText: total >= 1000 ? `${Math.round(total / 1000)}K` : total > 0 ? Math.round(total).toString() : '',
       label: monthNames[m],
     });
   }

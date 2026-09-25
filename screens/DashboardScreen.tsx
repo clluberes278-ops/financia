@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import {
   View,
-  Text,
+  Text as NativeText,
   StyleSheet,
   ScrollView,
   Pressable,
   Dimensions,
 } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { BarChart } from 'react-native-gifted-charts';
 import { useTransactionStore } from '../store/useTransactionStore';
 import {
@@ -25,14 +26,17 @@ import { CATEGORY_LABELS } from '../types/transaction';
 import { useSavingsStore } from '../store/useSavingsStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
+import { getThemeColors, ThemedText } from '../utils/theme';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+const Text = ThemedText;
 
 export default function DashboardScreen() {
   const { transactions, loadTransactions, isLoaded } = useTransactionStore();
   const { t } = useTranslation();
   const { pockets, loadPockets, isLoaded: savingsLoaded } = useSavingsStore();
-  const { accentColor, hideBalanceByDefault, isLoaded: settingsLoaded, loadSettings } = useSettingsStore();
+  const { accentColor, hideBalanceByDefault, theme: appTheme, isLoaded: settingsLoaded, loadSettings } = useSettingsStore();
+  const theme = getThemeColors(appTheme);
   const [hideBalance, setHideBalance] = useState(false);
 
   // Carga los datos guardados una sola vez al montar
@@ -72,9 +76,9 @@ export default function DashboardScreen() {
   const status = getFinancialStatus();
 
   return (
-    <View style={styles.screenWrapper}>
+    <View style={[styles.screenWrapper, { backgroundColor: theme.background }]}>
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: theme.background }]}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
@@ -91,13 +95,17 @@ export default function DashboardScreen() {
               style={styles.eyeToggle}
               hitSlop={10}
             >
-              <Text style={styles.eyeIcon}>{hideBalance ? '👁️‍🗨️' : '👁️'}</Text>
+              <MaterialCommunityIcons
+                name={hideBalance ? 'eye-off' : 'eye'}
+                size={20}
+                color="#94A3B8"
+              />
             </Pressable>
           </View>
 
           {/* Saldo Disponible */}
             <Text style={styles.balanceLabel}>{t('Saldo disponible')}</Text>
-          <Text style={styles.balanceAmount}>
+          <Text style={styles.balanceAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
             {hideBalance ? '••••••••' : formatCurrency(balance)}
           </Text>
 
@@ -120,11 +128,11 @@ export default function DashboardScreen() {
         </View>
 
         {/* Tarjeta Destacada de Bolsillos de Ahorro */}
-        <View style={styles.savingsCard}>
+        <View style={[styles.savingsCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.savingsHeader}>
             <View style={styles.savingsTitleRow}>
-              <Text style={styles.savingsEmoji}>🎯</Text>
-              <Text style={styles.savingsTitle} numberOfLines={1}>
+              <MaterialCommunityIcons name="target" size={22} color={theme.text} />
+              <Text style={[styles.savingsTitle, { color: theme.text }]} numberOfLines={1}>
                 Bolsillos de Ahorro
               </Text>
             </View>
@@ -138,7 +146,7 @@ export default function DashboardScreen() {
           {/* Bloque de Total Apartado */}
           <View style={styles.savingsMainBlock}>
             <Text style={styles.savingsAmountLabel}>{t('Total apartado en bolsillos')}</Text>
-            <Text style={styles.savingsMainAmount} numberOfLines={1}>
+            <Text style={styles.savingsMainAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
               {hideBalance ? '••••••••' : formatCurrency(totalInPockets)}
             </Text>
           </View>
@@ -171,7 +179,7 @@ export default function DashboardScreen() {
         </View>
 
         {/* Widget de Salud Financiera y Resumen */}
-        <View style={styles.healthWidget}>
+        <View style={[styles.healthWidget, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.healthHeader}>
             <Text style={styles.healthTitle}>{t('Salud Financiera')}</Text>
             <View style={[styles.statusBadge, { backgroundColor: `${status.color}18` }]}>
@@ -208,7 +216,7 @@ export default function DashboardScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t('Gastos esta semana')}</Text>
         </View>
-        <View style={styles.chartCard}>
+        <View style={[styles.chartCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           {weeklyData.every((d) => d.value === 0) ? (
             <View style={styles.chartEmpty}>
               <Text style={styles.chartEmptyText}>{t('Sin gastos registrados esta semana')}</Text>
@@ -248,19 +256,19 @@ export default function DashboardScreen() {
             <Text style={styles.emptyTextMini}>{t('No hay gastos registrados en el historial')}</Text>
           </View>
         ) : (
-          <View style={styles.categoriesCard}>
+          <View style={[styles.categoriesCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             {byCategory.map(({ category, total }) => {
               const percent = expenses > 0 ? Math.round((total / expenses) * 100) : 0;
               const cat = CATEGORY_LABELS[category];
               return (
                 <View key={category} style={styles.categoryItem}>
                   <View style={styles.categoryInfoRow}>
-                    <Text style={styles.categoryName}>
+                    <Text style={styles.categoryName} numberOfLines={1} ellipsizeMode="tail">
                       {cat.emoji} {t(cat.label)}
                     </Text>
                     <View style={styles.categoryAmountRow}>
                       <Text style={styles.categoryPercent}>{percent}%</Text>
-                      <Text style={styles.categoryTotal}>{formatCurrency(total)}</Text>
+                      <Text style={styles.categoryTotal} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>{formatCurrency(total)}</Text>
                     </View>
                   </View>
                   <View style={styles.barBackground}>
@@ -282,7 +290,7 @@ export default function DashboardScreen() {
             <Text style={styles.emptyTextMini}>{t('Sin movimientos recientes')}</Text>
           </View>
         ) : (
-          <View style={styles.recentList}>
+          <View style={[styles.recentList, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             {recent.map((transaction) => {
               const isIncome = transaction.type === 'ingreso';
               const cat = CATEGORY_LABELS[transaction.category] || {
@@ -291,7 +299,7 @@ export default function DashboardScreen() {
               };
 
               return (
-                <View key={transaction.id} style={styles.recentItem}>
+                <View key={transaction.id} style={[styles.recentItem, { borderBottomColor: theme.border }]}>
                   <View style={styles.recentLeft}>
                     <View
                       style={[
@@ -301,18 +309,22 @@ export default function DashboardScreen() {
                     >
                       <Text style={styles.recentEmoji}>{cat.emoji}</Text>
                     </View>
-                    <View>
-                      <Text style={styles.recentCategory}>{t(cat.label)}</Text>
-                      <Text style={styles.recentDate}>
+                    <View style={styles.recentCopy}>
+                      <Text style={styles.recentCategory} numberOfLines={1} ellipsizeMode="tail">{t(cat.label)}</Text>
+                      <Text style={styles.recentDate} numberOfLines={1} ellipsizeMode="tail">
                         {transaction.note ? `${transaction.note} • ` : ''}
                         {formatDate(transaction.date)}
                       </Text>
                     </View>
                   </View>
                   <Text
-                    style={
-                      isIncome ? styles.recentIncomeAmount : styles.recentExpenseAmount
-                    }
+                    style={[
+                      isIncome ? styles.recentIncomeAmount : styles.recentExpenseAmount,
+                      styles.recentAmount,
+                    ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
                   >
                     {isIncome ? '+' : '-'} {formatCurrency(transaction.amount)}
                   </Text>
@@ -634,11 +646,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#1E293B',
+    flex: 1,
+    minWidth: 0,
   },
   categoryAmountRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 1,
+    maxWidth: '48%',
   },
   categoryPercent: {
     fontSize: 12,
@@ -649,6 +665,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#334155',
+    maxWidth: '72%',
+    flexShrink: 1,
+    textAlign: 'right',
   },
   barBackground: {
     height: 7,
@@ -684,6 +703,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
+  },
+  recentCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   recentEmojiBox: {
     width: 40,
@@ -692,11 +718,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  recentIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
   recentEmojiIncome: {
     backgroundColor: '#ECFDF5',
   },
+  recentIconIncome: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#D1FAE5',
+  },
   recentEmojiExpense: {
     backgroundColor: '#FEF2F2',
+  },
+  recentIconExpense: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FEE2E2',
   },
   recentEmoji: {
     fontSize: 20,
@@ -715,6 +757,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     color: '#10B981',
+  },
+  recentAmount: {
+    maxWidth: '38%',
+    flexShrink: 1,
+    textAlign: 'right',
   },
   recentExpenseAmount: {
     fontSize: 14,

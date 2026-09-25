@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
+  Text as NativeText,
   StyleSheet,
   ScrollView,
   Pressable,
@@ -10,25 +10,26 @@ import {
   Dimensions,
 } from 'react-native';
 import { PieChart, LineChart } from 'react-native-gifted-charts';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { exportReportAsPdf } from '../utils/generatePdf';
 import { useTransactionStore } from '../store/useTransactionStore';
 import {
-  getAvailableMonths,
-  getTransactionsByMonth,
   calculateTotalIncome,
   calculateTotalExpenses,
   groupExpensesByCategory,
   calculateSavingsRate,
-  getDailyAverageExpense,
   getHighestExpense,
   formatCurrency,
-  formatMonthYear,
   formatDate,
   getMonthlyTrend,
 } from '../utils/calculations';
 import { CATEGORY_LABELS, Category } from '../types/transaction';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
+import { getThemeColors, ThemedText } from '../utils/theme';
+
+const Text = ThemedText;
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -37,63 +38,59 @@ const PIE_COLORS = ['#4F46E5','#10B981','#F59E0B','#EF4444','#3B82F6','#8B5CF6',
 export default function ReportsScreen() {
   const { transactions } = useTransactionStore();
   const accentColor = useSettingsStore((state) => state.accentColor);
+  const appTheme = useSettingsStore((state) => state.theme);
+  const theme = getThemeColors(appTheme);
   const { t } = useTranslation();
 
-  const availableMonths = getAvailableMonths(transactions);
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
+  const today = new Date();
+  const [startDate, setStartDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [endDate, setEndDate] = useState(today);
+  const [datePickerTarget, setDatePickerTarget] = useState<'start' | 'end' | null>(null);
 
-  const currentMonthData = availableMonths[selectedMonthIndex] || {
-    year: new Date().getFullYear(),
-    month: new Date().getMonth(),
-    label: formatMonthYear(new Date().getFullYear(), new Date().getMonth()),
+  const periodLabel = `${formatDate(startDate.toISOString())} - ${formatDate(endDate.toISOString())}`;
+  const startTimestamp = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()).getTime();
+  const endTimestamp = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999).getTime();
+  const monthTransactions = transactions.filter((transaction) => {
+    const transactionTimestamp = new Date(transaction.date).getTime();
+    return transactionTimestamp >= startTimestamp && transactionTimestamp <= endTimestamp;
+  });
+  const daysInPeriod = Math.max(1, Math.round((endTimestamp - startTimestamp) / 86400000) + 1);
+  const currentMonthData = {
+    label: periodLabel,
   };
-
-  const monthTransactions = getTransactionsByMonth(
-    transactions,
-    currentMonthData.year,
-    currentMonthData.month
-  );
 
   const monthIncome = calculateTotalIncome(monthTransactions);
   const monthExpenses = calculateTotalExpenses(monthTransactions);
   const netSavings = monthIncome - monthExpenses;
   const savingsRate = calculateSavingsRate(monthIncome, monthExpenses);
-  const dailyAverage = getDailyAverageExpense(
-    monthExpenses,
-    currentMonthData.year,
-    currentMonthData.month
-  );
+  const dailyAverage = monthExpenses / daysInPeriod;
   const monthlyTrend = getMonthlyTrend(transactions, 6);
   const byCategory = groupExpensesByCategory(monthTransactions);
   const highestExpense = getHighestExpense(monthTransactions);
 
-  const pieData = byCategory.map(({ category, total }, i) => ({
-    value: total,
-    color: PIE_COLORS[i % PIE_COLORS.length],
-    text: CATEGORY_LABELS[category as Category]?.emoji ?? '',
-    label: t(CATEGORY_LABELS[category as Category]?.label ?? category),
-  }));
+  const pieData = byCategory.map(({ category, total }, i) => {
+    const cat = CATEGORY_LABELS[category as Category] || { emoji: '🏷️', label: category };
+    return {
+      value: total,
+      color: PIE_COLORS[i % PIE_COLORS.length],
+      text: cat.emoji,
+      label: t(cat.label),
+    };
+  });
 
   const expenseRatio = monthIncome > 0 ? Math.min(100, Math.round((monthExpenses / monthIncome) * 100)) : 100;
-
-  const handlePrevMonth = () => {
-    if (selectedMonthIndex < availableMonths.length - 1) {
-      setSelectedMonthIndex(selectedMonthIndex + 1);
-    }
-  };
-
-  const handleNextMonth = () => {
-    if (selectedMonthIndex > 0) {
-      setSelectedMonthIndex(selectedMonthIndex - 1);
-    }
-  };
 
   const handleExport = async () => {
     if (isExporting) return;
     setIsExporting(true);
     try {
-      await exportReportAsPdf(monthTransactions, currentMonthData.year, currentMonthData.month);
+      await exportReportAsPdf(
+        monthTransactions,
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        periodLabel
+      );
     } catch (err) {
       Alert.alert(t('Error'), t('No se pudo generar el PDF. Inténtalo de nuevo.'));
     } finally {
@@ -102,35 +99,36 @@ export default function ReportsScreen() {
   };
 
   return (
-    <View style={styles.screenWrapper}>
+    <View style={[styles.screenWrapper, { backgroundColor: theme.background }]}>
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: theme.background }]}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
         {/* Selector de Período */}
-        <View style={styles.periodSelectorCard}>
-          <Pressable
-            style={[styles.arrowButton, selectedMonthIndex >= availableMonths.length - 1 && styles.arrowDisabled]}
-            onPress={handlePrevMonth}
-            disabled={selectedMonthIndex >= availableMonths.length - 1}
-          >
-            <Text style={styles.arrowText}>◀</Text>
-          </Pressable>
-
-          <View style={styles.periodCenter}>
-            <Text style={styles.periodLabel}>{t('Período de análisis')}</Text>
-            <Text style={styles.periodTitle}>{currentMonthData.label}</Text>
+        <Pressable
+          style={[styles.periodSelectorCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
+          onPress={() => setDatePickerTarget('start')}
+        >
+          <View style={[styles.periodIcon, { backgroundColor: `${accentColor}18` }]}>
+            <MaterialCommunityIcons name="calendar-edit" size={22} color={accentColor} />
           </View>
-
-          <Pressable
-            style={[styles.arrowButton, selectedMonthIndex <= 0 && styles.arrowDisabled]}
-            onPress={handleNextMonth}
-            disabled={selectedMonthIndex <= 0}
-          >
-            <Text style={styles.arrowText}>▶</Text>
-          </Pressable>
-        </View>
+          <View style={styles.periodCenter}>
+            <Text style={[styles.periodLabel, { color: theme.textSecondary }]}>{t('Período de análisis')}</Text>
+            <View style={styles.dateRangeRow}>
+              <Pressable onPress={() => setDatePickerTarget('start')} style={styles.dateRangePart}>
+                <Text style={[styles.dateRangeLabel, { color: theme.textMuted }]}>Desde</Text>
+                <Text style={[styles.periodTitle, { color: theme.text }]}>{formatDate(startDate.toISOString())}</Text>
+              </Pressable>
+              <Text style={[styles.dateRangeSeparator, { color: theme.textMuted }]}>-</Text>
+              <Pressable onPress={() => setDatePickerTarget('end')} style={styles.dateRangePart}>
+                <Text style={[styles.dateRangeLabel, { color: theme.textMuted }]}>Hasta</Text>
+                <Text style={[styles.periodTitle, { color: theme.text }]}>{formatDate(endDate.toISOString())}</Text>
+              </Pressable>
+            </View>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={22} color={theme.textMuted} />
+        </Pressable>
 
         {/* Botón Exportar PDF */}
         <Pressable
@@ -145,8 +143,28 @@ export default function ReportsScreen() {
           )}
         </Pressable>
 
+        {datePickerTarget && (
+          <DateTimePicker
+            value={datePickerTarget === 'start' ? startDate : endDate}
+            mode="date"
+            display="default"
+            onChange={(_, date) => {
+              const target = datePickerTarget;
+              setDatePickerTarget(null);
+              if (!date) return;
+              if (target === 'start') {
+                setStartDate(date);
+                if (date > endDate) setEndDate(date);
+              } else {
+                setEndDate(date);
+                if (date < startDate) setStartDate(date);
+              }
+            }}
+          />
+        )}
+
         {/* Resumen Ejecutivo del Mes */}
-        <View style={styles.executiveCard}>
+        <View style={[styles.executiveCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.cardHeaderRow}>
               <Text style={styles.executiveSubtitle}>{t('BALANCE MENSUAL')}</Text>
             <View
@@ -166,7 +184,7 @@ export default function ReportsScreen() {
             </View>
           </View>
 
-          <Text style={styles.netSavingsAmount}>
+          <Text style={styles.netSavingsAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
             {netSavings >= 0 ? '+' : ''}
             {formatCurrency(netSavings)}
           </Text>
@@ -180,14 +198,14 @@ export default function ReportsScreen() {
           <View style={styles.splitRow}>
             <View style={styles.splitItem}>
               <Text style={styles.splitLabel}>{t('Ingresos')}</Text>
-              <Text style={styles.splitIncome} numberOfLines={1}>
+              <Text style={styles.splitIncome} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                 {formatCurrency(monthIncome)}
               </Text>
             </View>
             <View style={styles.splitDivider} />
             <View style={styles.splitItem}>
               <Text style={styles.splitLabel}>{t('Gastos')}</Text>
-              <Text style={styles.splitExpense} numberOfLines={1}>
+              <Text style={styles.splitExpense} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                 {formatCurrency(monthExpenses)}
               </Text>
             </View>
@@ -219,27 +237,27 @@ export default function ReportsScreen() {
         <Text style={styles.sectionTitle}>{t('Métricas Inteligentes')}</Text>
         <View style={styles.kpiGrid}>
           {/* Promedio diario */}
-          <View style={styles.kpiCard}>
+          <View style={[styles.kpiCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={styles.kpiIcon}>📅</Text>
-            <Text style={styles.kpiValue} numberOfLines={1}>
+            <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
               {formatCurrency(dailyAverage)}
             </Text>
             <Text style={styles.kpiLabel}>{t('Gasto promedio / día')}</Text>
           </View>
 
           {/* Tasa de ahorro */}
-          <View style={styles.kpiCard}>
+          <View style={[styles.kpiCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={styles.kpiIcon}>🎯</Text>
-            <Text style={styles.kpiValue} numberOfLines={1}>
+            <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
               {savingsRate}%
             </Text>
             <Text style={styles.kpiLabel}>{t('Tasa de ahorro mensual')}</Text>
           </View>
 
           {/* Mayor gasto */}
-          <View style={styles.kpiCard}>
+          <View style={[styles.kpiCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={styles.kpiIcon}>🔥</Text>
-            <Text style={styles.kpiValue} numberOfLines={1}>
+            <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
               {highestExpense ? formatCurrency(highestExpense.amount) : 'RD$ 0.00'}
             </Text>
             <Text style={styles.kpiLabel} numberOfLines={1}>
@@ -248,9 +266,9 @@ export default function ReportsScreen() {
           </View>
 
           {/* Operaciones del mes */}
-          <View style={styles.kpiCard}>
+          <View style={[styles.kpiCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={styles.kpiIcon}>🔢</Text>
-            <Text style={styles.kpiValue} numberOfLines={1}>
+            <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
               {monthTransactions.length}
             </Text>
             <Text style={styles.kpiLabel}>{t('Movimientos en el mes')}</Text>
@@ -261,7 +279,7 @@ export default function ReportsScreen() {
         {byCategory.length > 0 && (
           <>
             <Text style={styles.sectionTitle}>{t('Distribución visual de gastos')}</Text>
-            <View style={styles.chartCard}>
+            <View style={[styles.chartCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <View style={styles.pieRow}>
                 <PieChart
                   data={pieData}
@@ -295,7 +313,7 @@ export default function ReportsScreen() {
 
         {/* Gráfica de línea: Tendencia mensual (6 meses) */}
         <Text style={styles.sectionTitle}>{t('Tendencia de gastos (6 meses)')}</Text>
-        <View style={styles.chartCard}>
+        <View style={[styles.chartCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           {monthlyTrend.every((d) => d.value === 0) ? (
             <View style={styles.chartEmpty}>
               <Text style={styles.chartEmptyText}>{t('Sin datos de tendencia aún')}</Text>
@@ -329,7 +347,7 @@ export default function ReportsScreen() {
         {/* Desglose de Gastos por Categoría */}
         <Text style={styles.sectionTitle}>{t('Gastos por Categoría')}</Text>
         {byCategory.length === 0 ? (
-          <View style={styles.emptyStateCard}>
+          <View style={[styles.emptyStateCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={styles.emptyEmoji}>🍃</Text>
             <Text style={styles.emptyTitle}>{t('Sin gastos en')} {currentMonthData.label}</Text>
             <Text style={styles.emptySubtitle}>
@@ -344,7 +362,7 @@ export default function ReportsScreen() {
               const count = monthTransactions.filter((t) => t.category === category && t.type === 'gasto').length;
 
               return (
-                <View key={category} style={styles.categoryCard}>
+                <View key={category} style={[styles.categoryCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                   <View style={styles.categoryHeader}>
                     <View style={styles.catLeft}>
                       <Text style={styles.catEmoji}>{cat.emoji}</Text>
@@ -358,7 +376,7 @@ export default function ReportsScreen() {
                       </View>
                     </View>
                     <View style={styles.catRight}>
-                      <Text style={styles.catAmount} numberOfLines={1}>
+                      <Text style={styles.catAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
                         {formatCurrency(total)}
                       </Text>
                       <Text style={styles.catPercent}>{pct}% del total</Text>
@@ -378,7 +396,7 @@ export default function ReportsScreen() {
         {monthTransactions.length > 0 && (
           <>
             <Text style={styles.sectionTitle}>{t('Detalle del período')} ({monthTransactions.length})</Text>
-            <View style={styles.transactionsListCard}>
+            <View style={[styles.transactionsListCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               {monthTransactions.map((t) => {
                 const isIncome = t.type === 'ingreso';
                 const cat = CATEGORY_LABELS[t.category] || { label: t.category, emoji: '🏷️' };
@@ -429,7 +447,6 @@ const styles = StyleSheet.create({
   periodSelectorCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     paddingVertical: 12,
@@ -441,24 +458,36 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  arrowButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: '#F1F5F9',
+  periodIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  arrowDisabled: {
-    opacity: 0.3,
-  },
-  arrowText: {
-    fontSize: 14,
-    color: '#0F172A',
-    fontWeight: '700',
+    marginRight: 12,
   },
   periodCenter: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  dateRangeRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 3,
+  },
+  dateRangePart: {
+    minWidth: 76,
+  },
+  dateRangeLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  dateRangeSeparator: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginHorizontal: 8,
   },
   periodLabel: {
     fontSize: 11,
@@ -468,7 +497,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   periodTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
     marginTop: 2,
@@ -673,11 +702,16 @@ const styles = StyleSheet.create({
   },
   catRight: {
     alignItems: 'flex-end',
+    width: '40%',
+    minWidth: 0,
   },
   catAmount: {
     fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
+    width: '100%',
+    flexShrink: 1,
+    textAlign: 'right',
   },
   catPercent: {
     fontSize: 11,
@@ -786,6 +820,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     letterSpacing: 0.3,
+  },
+  exportDateValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    marginTop: 3,
   },
   chartCard: {
     backgroundColor: '#FFFFFF',

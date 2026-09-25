@@ -14,9 +14,11 @@ import {
 export async function exportReportAsPdf(
   transactions: Transaction[],
   year: number,
-  month: number
+  month: number,
+  periodLabel?: string
 ): Promise<void> {
   const monthLabel = formatMonthYear(year, month);
+  const reportPeriodLabel = periodLabel ?? monthLabel;
   const income = calculateTotalIncome(transactions);
   const expenses = calculateTotalExpenses(transactions);
   const netSavings = income - expenses;
@@ -50,24 +52,6 @@ export async function exportReportAsPdf(
     })
     .join('');
 
-  const transactionRows = sorted
-    .map((t) => {
-      const isIncome = t.type === 'ingreso';
-      const cat = CATEGORY_LABELS[t.category] || { label: t.category, emoji: '🏷️' };
-      const color = isIncome ? '#10B981' : '#EF4444';
-      const prefix = isIncome ? '+' : '-';
-      return `
-        <tr>
-          <td style="color:#64748B; font-size:12px;">${formatDate(t.date)}</td>
-          <td>${cat.emoji} ${cat.label}</td>
-          <td style="color:#64748B; font-size:12px;">${t.note ?? '—'}</td>
-          <td style="text-align:right; font-weight:700; color:${color};">
-            ${prefix} ${formatCurrency(t.amount)}
-          </td>
-        </tr>`;
-    })
-    .join('');
-
   const now = new Date().toLocaleString('es-DO', {
     day: '2-digit',
     month: 'long',
@@ -80,27 +64,28 @@ export async function exportReportAsPdf(
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Informe Financia - ${monthLabel}</title>
+  <title>Informe Financia - ${reportPeriodLabel}</title>
   <style>
+    @page { size: 360px auto; margin: 0; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #F8FAFC;
       color: #0F172A;
-      padding: 32px;
+      padding: 18px;
     }
     .header {
       background: #0F172A;
-      border-radius: 20px;
-      padding: 28px 32px;
-      margin-bottom: 28px;
+      border-radius: 16px;
+      padding: 22px 18px;
+      margin-bottom: 18px;
       color: #fff;
     }
     .header-top {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
     .brand { display: flex; align-items: center; gap: 10px; }
     .chip {
@@ -109,58 +94,73 @@ export async function exportReportAsPdf(
       border-radius: 5px;
     }
     .brand-name {
-      font-size: 13px; font-weight: 800;
-      letter-spacing: 2px; color: #94A3B8;
+      font-size: 14px; font-weight: 800;
+      letter-spacing: 1px; color: #94A3B8;
     }
-    .generated { font-size: 11px; color: #64748B; text-align: right; }
-    .report-title { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
-    .report-period { font-size: 13px; color: #94A3B8; }
+    .generated { font-size: 12px; color: #64748B; text-align: right; }
+    .report-title { font-size: 24px; font-weight: 800; margin-bottom: 5px; }
+    .report-period { font-size: 14px; color: #94A3B8; }
     .kpi-row {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 28px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
     }
     .kpi-card {
       flex: 1;
       background: #fff;
-      border-radius: 16px;
-      padding: 18px;
+      border-radius: 12px;
+      padding: 14px 12px;
       box-shadow: 0 2px 8px rgba(15,23,42,0.06);
     }
     .kpi-label {
-      font-size: 11px; color: #64748B; font-weight: 600;
+      font-size: 12px; color: #64748B; font-weight: 600;
       text-transform: uppercase; letter-spacing: 0.5px;
       margin-bottom: 6px;
     }
-    .kpi-value { font-size: 20px; font-weight: 800; color: #0F172A; }
+    .kpi-value { font-size: 18px; font-weight: 800; color: #0F172A; word-break: break-word; }
     .section-title {
-      font-size: 15px; font-weight: 800;
-      margin-bottom: 14px; letter-spacing: -0.3px;
+      font-size: 17px; font-weight: 800;
+      margin-bottom: 10px;
     }
     .table-card {
       background: #fff;
-      border-radius: 18px;
-      padding: 20px;
-      margin-bottom: 28px;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 20px;
       box-shadow: 0 2px 8px rgba(15,23,42,0.06);
     }
     table { width: 100%; border-collapse: collapse; }
     th {
-      text-align: left; font-size: 11px; color: #94A3B8;
+      text-align: left; font-size: 12px; color: #94A3B8;
       font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.5px; padding-bottom: 10px;
       border-bottom: 1px solid #F1F5F9;
     }
     td {
-      padding: 10px 4px;
-      font-size: 13px;
+      padding: 11px 4px;
+      font-size: 14px;
       border-bottom: 1px solid #F8FAFC;
       vertical-align: middle;
     }
     tr:last-child td { border-bottom: none; }
+    .transaction-item {
+      padding: 11px 0;
+      border-bottom: 1px solid #F1F5F9;
+    }
+    .transaction-item:last-child { border-bottom: none; }
+    .transaction-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .transaction-category { font-size: 14px; font-weight: 700; }
+    .transaction-amount { font-size: 14px; font-weight: 800; white-space: nowrap; }
+    .transaction-meta { color: #64748B; font-size: 12px; margin-top: 4px; }
     .footer {
       text-align: center;
-      font-size: 11px; color: #CBD5E1;
+      font-size: 12px; color: #CBD5E1;
       margin-top: 12px;
     }
   </style>
@@ -175,7 +175,7 @@ export async function exportReportAsPdf(
       <div class="generated">Generado el<br/>${now}</div>
     </div>
     <div class="report-title">Informe Financiero</div>
-    <div class="report-period">Periodo: ${monthLabel}</div>
+    <div class="report-period">Periodo: ${reportPeriodLabel}</div>
   </div>
 
   <div class="kpi-row">
@@ -216,24 +216,33 @@ export async function exportReportAsPdf(
   <div class="table-card">
     ${sorted.length === 0
       ? '<p style="color:#94A3B8;font-size:13px;text-align:center;padding:20px 0;">Sin movimientos en este periodo.</p>'
-      : `<table>
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Categoria</th>
-              <th>Nota</th>
-              <th style="text-align:right;">Monto</th>
-            </tr>
-          </thead>
-          <tbody>${transactionRows}</tbody>
-        </table>`}
+      : `<div class="transaction-list">${sorted.map((t) => {
+          const isIncome = t.type === 'ingreso';
+          const cat = CATEGORY_LABELS[t.category] || { label: t.category, emoji: '🏷️' };
+          const color = isIncome ? '#10B981' : '#EF4444';
+          const prefix = isIncome ? '+' : '-';
+          return `<div class="transaction-item">
+            <div class="transaction-top">
+              <div class="transaction-category">${cat.emoji} ${cat.label}</div>
+              <div class="transaction-amount" style="color:${color};">${prefix} ${formatCurrency(t.amount)}</div>
+            </div>
+            <div class="transaction-meta">${formatDate(t.date)}${t.note ? ` · ${t.note}` : ''}</div>
+          </div>`;
+        }).join('')}</div>`}
   </div>
 
   <div class="footer">Generado por Financia Smart · Solo para uso personal · Datos almacenados localmente en tu dispositivo</div>
 </body>
 </html>`;
 
-  const { uri } = await Print.printToFileAsync({ html, base64: false });
+  const { uri } = await Print.printToFileAsync({
+    html,
+    width: 360,
+    height: 800,
+    textZoom: 110,
+    margins: { top: 0, right: 0, bottom: 0, left: 0 },
+    base64: false,
+  });
 
   const isAvailable = await Sharing.isAvailableAsync();
   if (isAvailable) {

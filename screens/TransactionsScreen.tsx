@@ -1,34 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
-  Text,
+  Text as NativeText,
   StyleSheet,
   FlatList,
   Pressable,
   Alert,
 } from 'react-native';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { CATEGORY_LABELS, TransactionType } from '../types/transaction';
 import { formatCurrency, formatDate } from '../utils/calculations';
-import TransactionModal from '../components/TransactionModal';
+import TransactionBottomSheet from '../components/TransactionBottomSheet';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
+import { getThemeColors, ThemedText } from '../utils/theme';
 
 type FilterType = 'todos' | 'gasto' | 'ingreso';
+const Text = ThemedText;
 
 export default function TransactionsScreen() {
   const { transactions, deleteTransaction, clearAllTransactions } =
     useTransactionStore();
   const accentColor = useSettingsStore((state) => state.accentColor);
+  const appTheme = useSettingsStore((state) => state.theme);
+  const theme = getThemeColors(appTheme);
   const { t } = useTranslation();
 
-  const [modalVisible, setModalVisible] = useState(false);
+  const bottomSheetRef = React.useRef<BottomSheetModal>(null);
   const [modalType, setModalType] = useState<TransactionType>('gasto');
   const [filter, setFilter] = useState<FilterType>('todos');
 
   const handleOpenModal = (type: TransactionType = 'gasto') => {
     setModalType(type);
-    setModalVisible(true);
+    bottomSheetRef.current?.present();
   };
 
   const handleConfirmDelete = (id: string, note?: string) => {
@@ -73,7 +79,7 @@ export default function TransactionsScreen() {
   }, 0);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Barra superior de acciones */}
       <View style={styles.topBar}>
         <View>
@@ -90,7 +96,7 @@ export default function TransactionsScreen() {
               style={styles.clearButton}
               onPress={handleConfirmClear}
             >
-              <Text style={styles.clearButtonText}>🗑️</Text>
+              <MaterialCommunityIcons name="trash-can-outline" size={18} color={theme.textSecondary} />
             </Pressable>
           )}
         </View>
@@ -99,12 +105,13 @@ export default function TransactionsScreen() {
       {/* Selector de Filtros */}
       <View style={styles.filterRow}>
         <Pressable
-          style={[styles.filterChip, filter === 'todos' && styles.filterChipActive]}
+          style={[styles.filterChip, { backgroundColor: theme.surfaceMuted }, filter === 'todos' && { backgroundColor: accentColor }]}
           onPress={() => setFilter('todos')}
         >
           <Text
             style={[
               styles.filterChipText,
+              { color: theme.textSecondary },
               filter === 'todos' && styles.filterChipTextActive,
             ]}
           >
@@ -113,31 +120,39 @@ export default function TransactionsScreen() {
         </Pressable>
 
         <Pressable
-          style={[styles.filterChip, filter === 'gasto' && styles.filterChipActive]}
+          style={[styles.filterChip, { backgroundColor: theme.surfaceMuted }, filter === 'gasto' && { backgroundColor: accentColor }]}
           onPress={() => setFilter('gasto')}
         >
-          <Text
-            style={[
-              styles.filterChipText,
-              filter === 'gasto' && styles.filterChipTextActive,
-            ]}
-          >
-            📉 {t('Gastos')}
-          </Text>
+          <View style={styles.filterChipContent}>
+            <MaterialCommunityIcons name="trending-down" size={14} color={filter === 'gasto' ? '#FFFFFF' : theme.textSecondary} />
+            <Text
+              style={[
+                styles.filterChipText,
+                { color: theme.textSecondary },
+                filter === 'gasto' && styles.filterChipTextActive,
+              ]}
+            >
+              {t('Gastos')}
+            </Text>
+          </View>
         </Pressable>
 
         <Pressable
-          style={[styles.filterChip, filter === 'ingreso' && styles.filterChipActive]}
+          style={[styles.filterChip, { backgroundColor: theme.surfaceMuted }, filter === 'ingreso' && { backgroundColor: accentColor }]}
           onPress={() => setFilter('ingreso')}
         >
-          <Text
-            style={[
-              styles.filterChipText,
-              filter === 'ingreso' && styles.filterChipTextActive,
-            ]}
-          >
-            📈 {t('Ingresos')}
-          </Text>
+          <View style={styles.filterChipContent}>
+            <MaterialCommunityIcons name="trending-up" size={14} color={filter === 'ingreso' ? '#FFFFFF' : theme.textSecondary} />
+            <Text
+              style={[
+                styles.filterChipText,
+                { color: theme.textSecondary },
+                filter === 'ingreso' && styles.filterChipTextActive,
+              ]}
+            >
+              {t('Ingresos')}
+            </Text>
+          </View>
         </Pressable>
       </View>
 
@@ -148,9 +163,9 @@ export default function TransactionsScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View style={styles.emptyCard}>
+          <View style={[styles.emptyCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <View style={styles.emptyIconCircle}>
-              <Text style={styles.emptyIcon}>💳</Text>
+              <MaterialCommunityIcons name="credit-card-outline" size={32} color="#4F46E5" />
             </View>
             <Text style={styles.emptyTitle}>{t('Sin movimientos aún')}</Text>
             <Text style={styles.emptyDescription}>
@@ -162,7 +177,10 @@ export default function TransactionsScreen() {
               style={[styles.emptyPrimaryBtn, { backgroundColor: accentColor }]}
               onPress={() => handleOpenModal('gasto')}
             >
-              <Text style={styles.emptyPrimaryBtnText}>➕ {t('Registrar movimiento')}</Text>
+              <View style={styles.emptyBtnContent}>
+                <MaterialCommunityIcons name="plus" size={20} color="#FFFFFF" />
+                <Text style={styles.emptyPrimaryBtnText}>{t('Registrar movimiento')}</Text>
+              </View>
             </Pressable>
           </View>
         }
@@ -174,7 +192,7 @@ export default function TransactionsScreen() {
           };
 
           return (
-            <View style={styles.transactionCard}>
+            <View style={[styles.transactionCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <View style={styles.cardLeft}>
                 <View
                   style={[
@@ -182,7 +200,11 @@ export default function TransactionsScreen() {
                     isIncome ? styles.avatarIncome : styles.avatarExpense,
                   ]}
                 >
-                  <Text style={styles.categoryEmoji}>{catInfo.emoji}</Text>
+                  <MaterialCommunityIcons
+                    name={catInfo.emoji === '💰' ? 'cash' : 'tag-outline'}
+                    size={22}
+                    color={isIncome ? '#10B981' : '#EF4444'}
+                  />
                 </View>
 
                 <View style={styles.cardInfo}>
@@ -218,13 +240,11 @@ export default function TransactionsScreen() {
         style={({ pressed }) => [styles.fabButton, { backgroundColor: accentColor }, pressed && styles.fabPressed]}
         onPress={() => handleOpenModal('gasto')}
       >
-        <Text style={styles.fabIcon}>＋</Text>
+        <MaterialCommunityIcons name="plus" size={32} color="#FFFFFF" />
       </Pressable>
 
-      {/* Modal Inteligente de Transacciones */}
-      <TransactionModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
+      <TransactionBottomSheet
+        bottomSheetRef={bottomSheetRef}
         initialType={modalType}
       />
     </View>
@@ -282,6 +302,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 20,
     backgroundColor: '#E2E8F0',
+  },
+  filterChipContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   filterChipActive: {
     backgroundColor: '#0F172A',
@@ -419,6 +444,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: 10,
+  },
+  emptyBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   emptyPrimaryBtnText: {
     color: '#FFFFFF',

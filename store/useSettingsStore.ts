@@ -4,15 +4,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const STORAGE_KEY = '@financia_settings';
 
 export type AppLanguage = 'es' | 'en';
+export type AppTheme = 'light' | 'dark';
 
 export interface SettingsState {
   language: AppLanguage;
+  theme: AppTheme;
   accentColor: string;
   hideBalanceByDefault: boolean;
   notificationsEnabled: boolean;
   isLoaded: boolean;
   loadSettings: () => Promise<void>;
   setLanguage: (language: AppLanguage) => Promise<void>;
+  setTheme: (theme: AppTheme) => Promise<void>;
   setAccentColor: (accentColor: string) => Promise<void>;
   setHideBalanceByDefault: (value: boolean) => Promise<void>;
   setNotificationsEnabled: (value: boolean) => Promise<void>;
@@ -20,11 +23,12 @@ export interface SettingsState {
 
 type StoredSettings = Pick<
   SettingsState,
-  'language' | 'accentColor' | 'hideBalanceByDefault' | 'notificationsEnabled'
+  'language' | 'theme' | 'accentColor' | 'hideBalanceByDefault' | 'notificationsEnabled'
 >;
 
 const DEFAULT_SETTINGS: StoredSettings = {
   language: 'es',
+  theme: 'light',
   accentColor: '#4F46E5',
   hideBalanceByDefault: false,
   notificationsEnabled: true,
@@ -45,6 +49,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setLanguage: async (language) => {
     set({ language });
     await persist({ ...get(), language });
+  },
+  setTheme: async (theme) => {
+    set({ theme });
+    await persist({ ...get(), theme });
   },
   setAccentColor: async (accentColor) => {
     set({ accentColor });
