@@ -1989,3 +1989,123 @@
 {"_e":"devserver:start","_t":1790312372836,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
 {"_e":"metro:config","_t":1790312373926,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
 {"_e":"expo:dev-tools-plugin:load","_t":1790312374666,"plugins":[]}
+{"_e":"metro:instantiate","_t":1790312382198,"atlas":false,"workers":8,"host":"::","port":8081}
+{"_e":"metro:bundling:started","_t":1790312388160,"id":"1","platform":"ios","environment":null,"entry":"node_modules\\expo\\AppEntry.js"}
+{"_e":"metro:bundling:progress","_t":1790312388161,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312388166,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312388266,"id":"1","progress":0.014460823585963789,"total":158,"current":19}
+{"_e":"metro:bundling:progress","_t":1790312388366,"id":"1","progress":0.030008060016120032,"total":254,"current":44}
+{"_e":"metro:bundling:progress","_t":1790312388467,"id":"1","progress":0.1770432082176237,"total":366,"current":154}
+{"_e":"metro:bundling:progress","_t":1790312388568,"id":"1","progress":0.18393746284185492,"total":464,"current":199}
+{"_e":"metro:bundling:progress","_t":1790312388667,"id":"1","progress":0.2591430564338619,"total":607,"current":309}
+{"_e":"metro:bundling:progress","_t":1790312388767,"id":"1","progress":0.32158948886396416,"total":790,"current":448}
+{"_e":"metro:bundling:progress","_t":1790312388868,"id":"1","progress":0.4439241700442606,"total":854,"current":569}
+{"_e":"metro:bundling:progress","_t":1790312388968,"id":"1","progress":0.4997278907217658,"total":969,"current":685}
+{"_e":"metro:bundling:progress","_t":1790312389068,"id":"1","progress":0.6664524113231837,"total":1051,"current":858}
+{"_e":"metro:bundling:progress","_t":1790312389168,"id":"1","progress":0.7199265381083564,"total":1221,"current":1036}
+{"_e":"metro:bundling:progress","_t":1790312389274,"id":"1","progress":0.7199265381083564,"total":1308,"current":1056}
+{"_e":"metro:bundling:progress","_t":1790312389374,"id":"1","progress":0.7793954962914567,"total":1468,"current":1296}
+{"_e":"metro:bundling:progress","_t":1790312389474,"id":"1","progress":0.8175624798307577,"total":1503,"current":1359}
+{"_e":"metro:bundling:progress","_t":1790312389574,"id":"1","progress":0.8757820459209293,"total":1574,"current":1473}
+{"_e":"metro:bundling:progress","_t":1790312389674,"id":"1","progress":0.9433411022266844,"total":1670,"current":1622}
+{"_e":"metro:bundling:progress","_t":1790312389774,"id":"1","progress":0.991942478870916,"total":1734,"current":1727}
+{"_e":"metro:bundling:done","_t":1790312390016,"id":"1","total":1734,"ms":1855.7466}
+{"_e":"metro:client_log","_t":1790312395149,"level":"warn","data":["[Reanimated] Reduced motion setting is enabled on this device. This warning is visible only in the development mode. Some animations will be disabled by default. You can override the behavior for individual animations, see https://docs.swmansion.com/react-native-reanimated/docs/guides/troubleshooting#reduced-motion-setting-is-enabled-on-this-device."]}
+{"_e":"metro:client_log","_t":1790312398837,"level":"warn","data":["DateTimePicker: `onChange` is deprecated. Use `onValueChange`, `onDismiss`, and `onNeutralButtonPress` instead."]}
+{"_e":"metro:bundling:started","_t":1790312601070,"id":"2","platform":"web","environment":null,"entry":"node_modules\\expo\\AppEntry.js"}
+{"_e":"metro:bundling:progress","_t":1790312601070,"id":"2","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312601084,"id":"2","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312601257,"id":"2","progress":0.03698224852071006,"total":26,"current":5}
+{"_e":"metro:bundling:progress","_t":1790312601364,"id":"2","progress":0.03698224852071006,"total":65,"current":7}
+{"_e":"metro:bundling:progress","_t":1790312601469,"id":"2","progress":0.03698224852071006,"total":109,"current":11}
+{"_e":"metro:bundling:progress","_t":1790312601572,"id":"2","progress":0.03698224852071006,"total":129,"current":18}
+{"_e":"metro:bundling:progress","_t":1790312601677,"id":"2","progress":0.059253808864265935,"total":152,"current":37}
+{"_e":"metro:bundling:progress","_t":1790312601778,"id":"2","progress":0.06874628197501488,"total":164,"current":43}
+{"_e":"metro:bundling:progress","_t":1790312601879,"id":"2","progress":0.06874628197501488,"total":168,"current":44}
+{"_e":"metro:bundling:progress","_t":1790312601988,"id":"2","progress":0.1312213660974594,"total":196,"current":71}
+{"_e":"metro:bundling:progress","_t":1790312602087,"id":"2","progress":0.16000000000000003,"total":250,"current":100}
+{"_e":"metro:bundling:progress","_t":1790312602187,"id":"2","progress":0.18276419618302675,"total":269,"current":115}
+{"_e":"metro:bundling:progress","_t":1790312602291,"id":"2","progress":0.1971744711908144,"total":277,"current":123}
+{"_e":"metro:bundling:progress","_t":1790312602393,"id":"2","progress":0.19753086419753085,"total":297,"current":132}
+{"_e":"metro:bundling:progress","_t":1790312602491,"id":"2","progress":0.27355652700831024,"total":304,"current":159}
+{"_e":"metro:bundling:progress","_t":1790312602593,"id":"2","progress":0.30250000000000005,"total":320,"current":176}
+{"_e":"metro:bundling:progress","_t":1790312602698,"id":"2","progress":0.3579803686403231,"total":356,"current":213}
+{"_e":"metro:bundling:progress","_t":1790312602803,"id":"2","progress":0.3579803686403231,"total":386,"current":225}
+{"_e":"metro:bundling:progress","_t":1790312602906,"id":"2","progress":0.3579803686403231,"total":432,"current":246}
+{"_e":"metro:bundling:progress","_t":1790312603009,"id":"2","progress":0.3579803686403231,"total":490,"current":272}
+{"_e":"metro:bundling:progress","_t":1790312603216,"id":"2","progress":0.3579803686403231,"total":493,"current":273}
+{"_e":"metro:bundling:progress","_t":1790312603319,"id":"2","progress":0.3579803686403231,"total":493,"current":273}
+{"_e":"metro:bundling:progress","_t":1790312603537,"id":"2","progress":0.3579803686403231,"total":495,"current":274}
+{"_e":"metro:bundling:progress","_t":1790312603637,"id":"2","progress":0.3579803686403231,"total":498,"current":277}
+{"_e":"metro:bundling:progress","_t":1790312603738,"id":"2","progress":0.3579803686403231,"total":500,"current":278}
+{"_e":"metro:bundling:progress","_t":1790312605274,"id":"2","progress":0.3579803686403231,"total":500,"current":279}
+{"_e":"metro:bundling:progress","_t":1790312605374,"id":"2","progress":0.3579803686403231,"total":523,"current":299}
+{"_e":"metro:bundling:progress","_t":1790312605573,"id":"2","progress":0.3579803686403231,"total":523,"current":303}
+{"_e":"metro:bundling:progress","_t":1790312605678,"id":"2","progress":0.3579803686403231,"total":544,"current":325}
+{"_e":"metro:bundling:progress","_t":1790312605778,"id":"2","progress":0.4420581698590717,"total":558,"current":371}
+{"_e":"metro:bundling:progress","_t":1790312605883,"id":"2","progress":0.4420581698590717,"total":579,"current":384}
+{"_e":"metro:bundling:progress","_t":1790312605980,"id":"2","progress":0.4420581698590717,"total":625,"current":400}
+{"_e":"metro:bundling:progress","_t":1790312606083,"id":"2","progress":0.45835423016087334,"total":644,"current":436}
+{"_e":"metro:bundling:progress","_t":1790312606191,"id":"2","progress":0.4708514821127434,"total":666,"current":457}
+{"_e":"metro:bundling:progress","_t":1790312606294,"id":"2","progress":0.47379938864876536,"total":677,"current":466}
+{"_e":"metro:bundling:progress","_t":1790312606413,"id":"2","progress":0.47379938864876536,"total":705,"current":474}
+{"_e":"metro:bundling:progress","_t":1790312606514,"id":"2","progress":0.47379938864876536,"total":705,"current":474}
+{"_e":"metro:bundling:progress","_t":1790312606615,"id":"2","progress":0.47379938864876536,"total":705,"current":474}
+{"_e":"metro:bundling:progress","_t":1790312606714,"id":"2","progress":0.47379938864876536,"total":705,"current":474}
+{"_e":"metro:bundling:progress","_t":1790312606818,"id":"2","progress":0.47379938864876536,"total":705,"current":474}
+{"_e":"metro:bundling:progress","_t":1790312606918,"id":"2","progress":0.47379938864876536,"total":705,"current":474}
+{"_e":"metro:bundling:progress","_t":1790312607018,"id":"2","progress":0.47379938864876536,"total":705,"current":474}
+{"_e":"metro:bundling:progress","_t":1790312607119,"id":"2","progress":0.47379938864876536,"total":705,"current":474}
+{"_e":"metro:bundling:progress","_t":1790312607222,"id":"2","progress":0.47379938864876536,"total":705,"current":474}
+{"_e":"metro:bundling:progress","_t":1790312607322,"id":"2","progress":0.47379938864876536,"total":705,"current":474}
+{"_e":"metro:bundling:progress","_t":1790312607423,"id":"2","progress":0.47379938864876536,"total":705,"current":474}
+{"_e":"metro:bundling:progress","_t":1790312607523,"id":"2","progress":0.47379938864876536,"total":705,"current":474}
+{"_e":"metro:bundling:progress","_t":1790312607623,"id":"2","progress":0.47379938864876536,"total":705,"current":474}
+{"_e":"metro:bundling:progress","_t":1790312607723,"id":"2","progress":0.47379938864876536,"total":705,"current":474}
+{"_e":"metro:bundling:progress","_t":1790312607826,"id":"2","progress":0.47379938864876536,"total":705,"current":474}
+{"_e":"metro:bundling:progress","_t":1790312607926,"id":"2","progress":0.47379938864876536,"total":752,"current":497}
+{"_e":"metro:bundling:progress","_t":1790312608034,"id":"2","progress":0.47379938864876536,"total":752,"current":497}
+{"_e":"metro:bundling:progress","_t":1790312608135,"id":"2","progress":0.4790317722681359,"total":825,"current":571}
+{"_e":"metro:bundling:progress","_t":1790312608235,"id":"2","progress":0.4885643370617933,"total":877,"current":613}
+{"_e":"metro:bundling:progress","_t":1790312608335,"id":"2","progress":0.5248058898708173,"total":929,"current":673}
+{"_e":"metro:bundling:progress","_t":1790312608435,"id":"2","progress":0.6150826499947487,"total":941,"current":738}
+{"_e":"metro:bundling:progress","_t":1790312608535,"id":"2","progress":0.7177854938271605,"total":1008,"current":854}
+{"_e":"metro:bundling:progress","_t":1790312608636,"id":"2","progress":0.8335771883609162,"total":1115,"current":1018}
+{"_e":"metro:bundling:progress","_t":1790312608736,"id":"2","progress":0.9282821987265981,"total":1232,"current":1187}
+{"_e":"metro:bundling:progress","_t":1790312608836,"id":"2","progress":0.9754798601125069,"total":1297,"current":1281}
+{"_e":"metro:bundling:done","_t":1790312608951,"id":"2","total":1297,"ms":7880.5553}
+{"_e":"metro:client_log","_t":1790312609918,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1790312609919,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1790312609920,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1790312609920,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1790312612798,"level":"warn","data":["TouchableMixin is deprecated. Please use Pressable."]}
+{"_e":"metro:client_log","_t":1790312613086,"level":"error","data":["\n\n\u001b[1mCode: ReportsScreen.tsx\u001b[22m\n\u001b[0m \u001b[90m 320 |\u001b[39m             \u001b[33m<\u001b[39m\u001b[33m/\u001b[39m\u001b[33mView\u001b[39m\u001b[33m>\u001b[39m\n \u001b[90m 321 |\u001b[39m           ) \u001b[33m:\u001b[39m (\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 322 |\u001b[39m             \u001b[33m<\u001b[39m\u001b[33mLineChart\u001b[39m\n \u001b[90m     |\u001b[39m             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 323 |\u001b[39m               data\u001b[33m=\u001b[39m{monthlyTrend}\n \u001b[90m 324 |\u001b[39m               color\u001b[33m=\u001b[39m{accentColor}\n \u001b[90m 325 |\u001b[39m               thickness\u001b[33m=\u001b[39m{\u001b[35m3\u001b[39m}\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  ReportsScreen (screens\\ReportsScreen.tsx:322:13)\u001b[39m\n\u001b[90m  App (App.tsx:32:13)\u001b[39m"]}
+{"_e":"metro:client_log","_t":1790312613089,"level":"error","data":["\n\n\u001b[1mCode: ReportsScreen.tsx\u001b[22m\n\u001b[0m \u001b[90m 320 |\u001b[39m             \u001b[33m<\u001b[39m\u001b[33m/\u001b[39m\u001b[33mView\u001b[39m\u001b[33m>\u001b[39m\n \u001b[90m 321 |\u001b[39m           ) \u001b[33m:\u001b[39m (\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 322 |\u001b[39m             \u001b[33m<\u001b[39m\u001b[33mLineChart\u001b[39m\n \u001b[90m     |\u001b[39m             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 323 |\u001b[39m               data\u001b[33m=\u001b[39m{monthlyTrend}\n \u001b[90m 324 |\u001b[39m               color\u001b[33m=\u001b[39m{accentColor}\n \u001b[90m 325 |\u001b[39m               thickness\u001b[33m=\u001b[39m{\u001b[35m3\u001b[39m}\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  ReportsScreen (screens\\ReportsScreen.tsx:322:13)\u001b[39m\n\u001b[90m  App (App.tsx:32:13)\u001b[39m"]}
+{"_e":"metro:client_log","_t":1790312613096,"level":"error","data":["\n\n\u001b[1mCode: ReportsScreen.tsx\u001b[22m\n\u001b[0m \u001b[90m 320 |\u001b[39m             \u001b[33m<\u001b[39m\u001b[33m/\u001b[39m\u001b[33mView\u001b[39m\u001b[33m>\u001b[39m\n \u001b[90m 321 |\u001b[39m           ) \u001b[33m:\u001b[39m (\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 322 |\u001b[39m             \u001b[33m<\u001b[39m\u001b[33mLineChart\u001b[39m\n \u001b[90m     |\u001b[39m             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 323 |\u001b[39m               data\u001b[33m=\u001b[39m{monthlyTrend}\n \u001b[90m 324 |\u001b[39m               color\u001b[33m=\u001b[39m{accentColor}\n \u001b[90m 325 |\u001b[39m               thickness\u001b[33m=\u001b[39m{\u001b[35m3\u001b[39m}\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  ReportsScreen (screens\\ReportsScreen.tsx:322:13)\u001b[39m\n\u001b[90m  App (App.tsx:32:13)\u001b[39m"]}
+{"_e":"metro:client_log","_t":1790312613100,"level":"error","data":["\n\n\u001b[1mCode: ReportsScreen.tsx\u001b[22m\n\u001b[0m \u001b[90m 320 |\u001b[39m             \u001b[33m<\u001b[39m\u001b[33m/\u001b[39m\u001b[33mView\u001b[39m\u001b[33m>\u001b[39m\n \u001b[90m 321 |\u001b[39m           ) \u001b[33m:\u001b[39m (\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 322 |\u001b[39m             \u001b[33m<\u001b[39m\u001b[33mLineChart\u001b[39m\n \u001b[90m     |\u001b[39m             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 323 |\u001b[39m               data\u001b[33m=\u001b[39m{monthlyTrend}\n \u001b[90m 324 |\u001b[39m               color\u001b[33m=\u001b[39m{accentColor}\n \u001b[90m 325 |\u001b[39m               thickness\u001b[33m=\u001b[39m{\u001b[35m3\u001b[39m}\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  ReportsScreen (screens\\ReportsScreen.tsx:322:13)\u001b[39m\n\u001b[90m  App (App.tsx:32:13)\u001b[39m"]}
+{"_e":"metro:client_log","_t":1790312613104,"level":"error","data":["\n\n\u001b[1mCode: ReportsScreen.tsx\u001b[22m\n\u001b[0m \u001b[90m 320 |\u001b[39m             \u001b[33m<\u001b[39m\u001b[33m/\u001b[39m\u001b[33mView\u001b[39m\u001b[33m>\u001b[39m\n \u001b[90m 321 |\u001b[39m           ) \u001b[33m:\u001b[39m (\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 322 |\u001b[39m             \u001b[33m<\u001b[39m\u001b[33mLineChart\u001b[39m\n \u001b[90m     |\u001b[39m             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 323 |\u001b[39m               data\u001b[33m=\u001b[39m{monthlyTrend}\n \u001b[90m 324 |\u001b[39m               color\u001b[33m=\u001b[39m{accentColor}\n \u001b[90m 325 |\u001b[39m               thickness\u001b[33m=\u001b[39m{\u001b[35m3\u001b[39m}\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  ReportsScreen (screens\\ReportsScreen.tsx:322:13)\u001b[39m\n\u001b[90m  App (App.tsx:32:13)\u001b[39m"]}
+{"_e":"metro:client_log","_t":1790312613108,"level":"error","data":["\n\n\u001b[1mCode: ReportsScreen.tsx\u001b[22m\n\u001b[0m \u001b[90m 320 |\u001b[39m             \u001b[33m<\u001b[39m\u001b[33m/\u001b[39m\u001b[33mView\u001b[39m\u001b[33m>\u001b[39m\n \u001b[90m 321 |\u001b[39m           ) \u001b[33m:\u001b[39m (\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 322 |\u001b[39m             \u001b[33m<\u001b[39m\u001b[33mLineChart\u001b[39m\n \u001b[90m     |\u001b[39m             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 323 |\u001b[39m               data\u001b[33m=\u001b[39m{monthlyTrend}\n \u001b[90m 324 |\u001b[39m               color\u001b[33m=\u001b[39m{accentColor}\n \u001b[90m 325 |\u001b[39m               thickness\u001b[33m=\u001b[39m{\u001b[35m3\u001b[39m}\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  ReportsScreen (screens\\ReportsScreen.tsx:322:13)\u001b[39m\n\u001b[90m  App (App.tsx:32:13)\u001b[39m"]}
+{"_e":"metro:client_log","_t":1790312613111,"level":"error","data":["\n\n\u001b[1mCode: ReportsScreen.tsx\u001b[22m\n\u001b[0m \u001b[90m 320 |\u001b[39m             \u001b[33m<\u001b[39m\u001b[33m/\u001b[39m\u001b[33mView\u001b[39m\u001b[33m>\u001b[39m\n \u001b[90m 321 |\u001b[39m           ) \u001b[33m:\u001b[39m (\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 322 |\u001b[39m             \u001b[33m<\u001b[39m\u001b[33mLineChart\u001b[39m\n \u001b[90m     |\u001b[39m             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 323 |\u001b[39m               data\u001b[33m=\u001b[39m{monthlyTrend}\n \u001b[90m 324 |\u001b[39m               color\u001b[33m=\u001b[39m{accentColor}\n \u001b[90m 325 |\u001b[39m               thickness\u001b[33m=\u001b[39m{\u001b[35m3\u001b[39m}\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  ReportsScreen (screens\\ReportsScreen.tsx:322:13)\u001b[39m\n\u001b[90m  App (App.tsx:32:13)\u001b[39m"]}
+{"_e":"metro:client_log","_t":1790312614108,"level":"warn","data":["DateTimePicker is not supported on: web"]}
+{"_e":"metro:bundling:started","_t":1790312859610,"id":"c","platform":"ios","environment":null,"entry":"node_modules\\expo\\AppEntry.js"}
+{"_e":"metro:bundling:progress","_t":1790312859610,"id":"c","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312859613,"id":"c","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312859924,"id":"c","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312860041,"id":"c","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312864368,"id":"c","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312864467,"id":"c","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312864765,"id":"c","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312864828,"id":"c","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312865144,"id":"c","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312865221,"id":"c","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312865500,"id":"c","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312865773,"id":"c","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1790312865874,"id":"c","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1790312865973,"id":"c","total":1,"ms":6362.5158}
+{"_e":"metro:client_log","_t":1790312871696,"level":"warn","data":["[Reanimated] Reduced motion setting is enabled on this device. This warning is visible only in the development mode. Some animations will be disabled by default. You can override the behavior for individual animations, see https://docs.swmansion.com/react-native-reanimated/docs/guides/troubleshooting#reduced-motion-setting-is-enabled-on-this-device."]}
+{"_e":"metro:client_log","_t":1790312883238,"level":"warn","data":["DateTimePicker: `onChange` is deprecated. Use `onValueChange`, `onDismiss`, and `onNeutralButtonPress` instead."]}
+{"_e":"metro:bundling:started","_t":1790312976734,"id":"d","platform":"ios","environment":null,"entry":"node_modules\\expo\\AppEntry.js"}
+{"_e":"metro:bundling:progress","_t":1790312976734,"id":"d","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1790312976789,"id":"d","total":1,"ms":54.2837}
+{"_e":"metro:client_log","_t":1790312982868,"level":"warn","data":["[Reanimated] Reduced motion setting is enabled on this device. This warning is visible only in the development mode. Some animations will be disabled by default. You can override the behavior for individual animations, see https://docs.swmansion.com/react-native-reanimated/docs/guides/troubleshooting#reduced-motion-setting-is-enabled-on-this-device."]}
+{"_e":"metro:client_log","_t":1790313128835,"level":"warn","data":["DateTimePicker: `onChange` is deprecated. Use `onValueChange`, `onDismiss`, and `onNeutralButtonPress` instead."]}

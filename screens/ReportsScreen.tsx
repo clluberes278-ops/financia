@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import {
   View,
   Text as NativeText,
@@ -8,9 +8,11 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { PieChart, LineChart } from 'react-native-gifted-charts';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { exportReportAsPdf } from '../utils/generatePdf';
 import { useTransactionStore } from '../store/useTransactionStore';
 import {
@@ -41,14 +43,21 @@ export default function ReportsScreen() {
   const appTheme = useSettingsStore((state) => state.theme);
   const theme = getThemeColors(appTheme);
   const { t } = useTranslation();
+  const navigation = useNavigation<any>();
 
   const [isExporting, setIsExporting] = useState(false);
   const today = new Date();
   const [startDate, setStartDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [endDate, setEndDate] = useState(today);
   const [datePickerTarget, setDatePickerTarget] = useState<'start' | 'end' | null>(null);
+  const [rangeMode, setRangeMode] = useState<'thisMonth' | 'lastMonth' | 'year' | 'custom'>('thisMonth');
 
-  const periodLabel = `${formatDate(startDate.toISOString())} - ${formatDate(endDate.toISOString())}`;
+  const formatRangeDate = (date: Date) => new Intl.DateTimeFormat('es-DO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+  const periodLabel = `${formatRangeDate(startDate)} - ${formatRangeDate(endDate)}`;
   const startTimestamp = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()).getTime();
   const endTimestamp = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999).getTime();
   const monthTransactions = transactions.filter((transaction) => {
@@ -98,6 +107,42 @@ export default function ReportsScreen() {
     }
   };
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          accessibilityLabel={t('Exportar PDF')}
+          onPress={handleExport}
+          disabled={isExporting}
+          style={styles.headerExportButton}
+        >
+          {isExporting ? (
+            <ActivityIndicator size="small" color={theme.headerText} />
+          ) : (
+            <MaterialCommunityIcons name="file-pdf-box" size={24} color={theme.headerText} />
+          )}
+        </Pressable>
+      ),
+    });
+  }, [navigation, isExporting, startDate, endDate, theme.headerText, t]);
+
+  const applyQuickRange = (mode: 'thisMonth' | 'lastMonth' | 'year' | 'custom') => {
+    setRangeMode(mode);
+    if (mode === 'custom') return;
+
+    const current = new Date();
+    if (mode === 'thisMonth') {
+      setStartDate(new Date(current.getFullYear(), current.getMonth(), 1));
+      setEndDate(current);
+    } else if (mode === 'lastMonth') {
+      setStartDate(new Date(current.getFullYear(), current.getMonth() - 1, 1));
+      setEndDate(new Date(current.getFullYear(), current.getMonth(), 0));
+    } else {
+      setStartDate(new Date(current.getFullYear(), 0, 1));
+      setEndDate(new Date(current.getFullYear(), 11, 31));
+    }
+  };
+
   return (
     <View style={[styles.screenWrapper, { backgroundColor: theme.background }]}>
       <ScrollView
@@ -106,48 +151,52 @@ export default function ReportsScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Selector de Período */}
-        <Pressable
-          style={[styles.periodSelectorCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
-          onPress={() => setDatePickerTarget('start')}
-        >
-          <View style={[styles.periodIcon, { backgroundColor: `${accentColor}18` }]}>
-            <MaterialCommunityIcons name="calendar-edit" size={22} color={accentColor} />
-          </View>
-          <View style={styles.periodCenter}>
-            <Text style={[styles.periodLabel, { color: theme.textSecondary }]}>{t('Período de análisis')}</Text>
-            <View style={styles.dateRangeRow}>
-              <Pressable onPress={() => setDatePickerTarget('start')} style={styles.dateRangePart}>
-                <Text style={[styles.dateRangeLabel, { color: theme.textMuted }]}>Desde</Text>
-                <Text style={[styles.periodTitle, { color: theme.text }]}>{formatDate(startDate.toISOString())}</Text>
-              </Pressable>
-              <Text style={[styles.dateRangeSeparator, { color: theme.textMuted }]}>-</Text>
-              <Pressable onPress={() => setDatePickerTarget('end')} style={styles.dateRangePart}>
-                <Text style={[styles.dateRangeLabel, { color: theme.textMuted }]}>Hasta</Text>
-                <Text style={[styles.periodTitle, { color: theme.text }]}>{formatDate(endDate.toISOString())}</Text>
-              </Pressable>
+        <View style={[styles.periodSelectorCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View style={styles.periodHeader}>
+            <View style={[styles.periodIcon, { backgroundColor: `${accentColor}18` }]}>
+              <MaterialCommunityIcons name="calendar-edit" size={22} color={accentColor} />
             </View>
+            <Text style={[styles.periodLabel, { color: theme.textSecondary }]}>{t('Período de análisis')}</Text>
           </View>
-          <MaterialCommunityIcons name="chevron-right" size={22} color={theme.textMuted} />
-        </Pressable>
 
-        {/* Botón Exportar PDF */}
-        <Pressable
-          style={[styles.exportButton, { backgroundColor: accentColor, shadowColor: accentColor }, isExporting && styles.exportButtonDisabled]}
-          onPress={handleExport}
-          disabled={isExporting}
-        >
-          {isExporting ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Text style={styles.exportButtonText}>📄 {t('Exportar PDF')}</Text>
-          )}
-        </Pressable>
+          <View style={styles.quickRangeRow}>
+            {([
+              ['thisMonth', 'Este mes'],
+              ['lastMonth', 'Mes pasado'],
+              ['year', 'Año'],
+              ['custom', 'Personalizado'],
+            ] as const).map(([mode, label]) => (
+              <Pressable
+                key={mode}
+                onPress={() => applyQuickRange(mode)}
+                style={[styles.quickRangeChip, { backgroundColor: theme.surfaceMuted }, rangeMode === mode && { backgroundColor: accentColor }]}
+              >
+                <Text style={[styles.quickRangeText, { color: theme.textSecondary }, rangeMode === mode && styles.quickRangeTextActive]}>
+                  {label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <View style={styles.dateRangeRow}>
+            <Pressable onPress={() => setDatePickerTarget('start')} style={[styles.dateRangePart, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}>
+              <Text style={[styles.dateRangeLabel, { color: theme.textMuted }]}>Desde</Text>
+              <Text style={[styles.periodTitle, { color: theme.text }]}>{formatRangeDate(startDate)}</Text>
+            </Pressable>
+            <MaterialCommunityIcons name="arrow-right" size={18} color={theme.textMuted} />
+            <Pressable onPress={() => setDatePickerTarget('end')} style={[styles.dateRangePart, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}>
+              <Text style={[styles.dateRangeLabel, { color: theme.textMuted }]}>Hasta</Text>
+              <Text style={[styles.periodTitle, { color: theme.text }]}>{formatRangeDate(endDate)}</Text>
+            </Pressable>
+          </View>
+        </View>
 
         {datePickerTarget && (
           <DateTimePicker
             value={datePickerTarget === 'start' ? startDate : endDate}
             mode="date"
-            display="default"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            themeVariant={appTheme}
             onChange={(_, date) => {
               const target = datePickerTarget;
               setDatePickerTarget(null);
@@ -445,12 +494,9 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   periodSelectorCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    padding: 14,
     marginBottom: 16,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
@@ -466,9 +512,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
+  periodHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
   periodCenter: {
     flex: 1,
     alignItems: 'flex-start',
+  },
+  quickRangeRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 12,
+  },
+  quickRangeChip: {
+    flex: 1,
+    minHeight: 34,
+    paddingHorizontal: 8,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickRangeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  quickRangeTextActive: {
+    color: '#FFFFFF',
   },
   dateRangeRow: {
     flexDirection: 'row',
@@ -476,7 +548,12 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   dateRangePart: {
-    minWidth: 76,
+    flex: 1,
+    minWidth: 0,
+    borderWidth: 1,
+    borderRadius: 11,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   dateRangeLabel: {
     fontSize: 10,
@@ -497,10 +574,17 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   periodTitle: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '800',
     color: '#0F172A',
     marginTop: 2,
+  },
+  headerExportButton: {
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
   },
   executiveCard: {
     backgroundColor: '#0F172A',
