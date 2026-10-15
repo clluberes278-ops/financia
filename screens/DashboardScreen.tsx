@@ -146,7 +146,6 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#0F172A', // Azul pizarra muy oscuro
     paddingTop: Platform.OS === 'android' ? 40 : 0,
   },
   header: {
@@ -160,23 +159,19 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#FFFFFF',
     letterSpacing: -0.5,
   },
   subGreeting: {
     fontSize: 14,
-    color: '#94A3B8',
     marginTop: 2,
   },
   profileButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#1E293B',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
   },
   notificationDot: {
     position: 'absolute',
@@ -187,19 +182,16 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#EF4444',
     borderWidth: 2,
-    borderColor: '#1E293B',
   },
   scrollContent: {
     paddingHorizontal: 24,
     paddingBottom: 100,
   },
   mainCard: {
-    backgroundColor: '#1E293B',
     borderRadius: 24,
     padding: 24,
     marginBottom: 32,
     borderWidth: 1,
-    borderColor: '#334155',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
@@ -207,14 +199,12 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   balanceLabel: {
-    color: '#94A3B8',
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 8,
   },
   balanceAmount: {
-    color: '#FFFFFF',
     fontSize: 38,
     fontWeight: '800',
     textAlign: 'center',
@@ -231,11 +221,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
     padding: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   summaryIcon: {
     width: 36,
@@ -245,7 +233,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   summaryLabel: {
-    color: '#94A3B8',
     fontSize: 11,
     fontWeight: '600',
   },
@@ -266,12 +253,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
   },
   seeAllText: {
-    color: '#6366F1',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -282,11 +267,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
     padding: 16,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   transactionLeft: {
     flexDirection: 'row',
@@ -297,7 +280,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#0F172A',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -305,12 +287,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   transactionTitle: {
-    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '600',
   },
   transactionDate: {
-    color: '#64748B',
     fontSize: 12,
     marginTop: 2,
   },
@@ -324,7 +304,6 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyText: {
-    color: '#64748B',
     fontSize: 14,
     marginTop: 12,
   },
@@ -332,14 +311,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 30,
     right: 24,
-    backgroundColor: '#6366F1', // Color acento eléctrico
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderRadius: 30,
     elevation: 8,
-    shadowColor: '#6366F1',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 10,

@@ -29,3 +29,4 @@ Financia is a personal finance application built with **Expo**, **React Native**
 - **Navigation**: Migrated to **Expo Router** (File-based routing) to follow professional standards.
 - **Calculations**: Decoupled logic in `utils/`.
 - **Security**: Root-level biometric lock integration.
+- **Theming**: Dynamic theming system using Zustand, providing global light/dark mode and customizable accent colors via `utils/theme.ts`.
