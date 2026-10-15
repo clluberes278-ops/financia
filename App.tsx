@@ -16,8 +16,9 @@ import { getFontFamily, getShadowStyle, getThemeColors } from './utils/theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { MainTabParamList } from './types/navigation';
 import { useAuthStore } from './store/useAuthStore';
+import { useGmailStore } from './store/useGmailStore';
 import WelcomeScreen from './screens/WelcomeScreen';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, AppState, View } from 'react-native';
 import { ThemedText } from './utils/theme';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -27,6 +28,7 @@ export default function App() {
   const session = useAuthStore((state) => state.session);
   const authLoading = useAuthStore((state) => state.isLoading);
   const initializeAuth = useAuthStore((state) => state.initialize);
+  const loadImportedTransactions = useGmailStore((state) => state.loadImportedTransactions);
   const [continueAsGuest, setContinueAsGuest] = useState(false);
   const accentColor = useSettingsStore((state) => state.accentColor);
   const appTheme = useSettingsStore((state) => state.theme);
@@ -37,6 +39,23 @@ export default function App() {
   useEffect(() => {
     void initializeAuth();
   }, [initializeAuth]);
+
+  useEffect(() => {
+    if (!session) return;
+
+    void loadImportedTransactions();
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void loadImportedTransactions();
+    });
+    const refreshInterval = setInterval(() => {
+      if (AppState.currentState === 'active') void loadImportedTransactions();
+    }, 5 * 60 * 1000);
+
+    return () => {
+      appStateSubscription.remove();
+      clearInterval(refreshInterval);
+    };
+  }, [session?.user.id, loadImportedTransactions]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

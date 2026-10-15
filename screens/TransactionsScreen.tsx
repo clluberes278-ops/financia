@@ -48,7 +48,13 @@ export default function TransactionsScreen() {
         {
           text: t('Eliminar'),
           style: 'destructive',
-          onPress: () => deleteTransaction(id),
+          onPress: async () => {
+            try {
+              await deleteTransaction(id);
+            } catch {
+              Alert.alert(t('Error'), t('No se pudo actualizar el movimiento. Inténtalo de nuevo.'));
+            }
+          },
         },
       ]
     );
@@ -63,7 +69,13 @@ export default function TransactionsScreen() {
         {
           text: t('Borrar todo'),
           style: 'destructive',
-          onPress: () => clearAllTransactions(),
+          onPress: async () => {
+            try {
+              await clearAllTransactions();
+            } catch {
+              Alert.alert(t('Error'), t('No se pudieron borrar los movimientos. Inténtalo de nuevo.'));
+            }
+          },
         },
       ]
     );

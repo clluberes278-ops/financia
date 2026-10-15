@@ -2,10 +2,13 @@ import { create } from 'zustand';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
-import type { Session, Subscription } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FunctionsHttpError, type Session, type Subscription } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from '../utils/supabase';
+import { useGmailStore } from './useGmailStore';
 
 WebBrowser.maybeCompleteAuthSession();
+const GMAIL_CONNECT_PENDING_KEY = '@financia_gmail_connect_pending';
 
 export type AuthProvider = 'google' | 'apple';
 
@@ -17,11 +20,56 @@ interface AuthState {
   error: string | null;
   initialize: () => Promise<void>;
   signInWithProvider: (provider: AuthProvider) => Promise<void>;
+  connectGmail: () => Promise<void>;
   signOut: () => Promise<void>;
   clearError: () => void;
 }
 
 let authSubscription: Subscription | null = null;
+
+async function getGmailConnectError(error: FunctionsHttpError): Promise<Error> {
+  const response: unknown = error.context;
+  if (!(response instanceof Response)) return new Error(error.message);
+
+  const responseBody = await response.clone().text();
+  try {
+    const payload: unknown = JSON.parse(responseBody);
+    if (
+      typeof payload === 'object' &&
+      payload !== null &&
+      'error' in payload &&
+      typeof payload.error === 'string'
+    ) {
+      return new Error(payload.error);
+    }
+  } catch {
+    return new Error(`La función de Gmail respondió con HTTP ${response.status} y un mensaje no legible.`);
+  }
+
+  return new Error(`La función de Gmail respondió con HTTP ${response.status} sin detallar el error.`);
+}
+
+async function saveGmailRefreshToken(refreshToken: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase no está configurado.');
+  const { error } = await supabase.functions.invoke('gmail-connect', {
+    body: { refreshToken },
+  });
+  if (error instanceof FunctionsHttpError) throw await getGmailConnectError(error);
+  if (error) throw error;
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw sessionError;
+  const activeSession = sessionData.session;
+  if (activeSession?.provider_refresh_token) {
+    const { error: clearProviderTokenError } = await supabase.auth.setSession({
+      access_token: activeSession.access_token,
+      refresh_token: activeSession.refresh_token,
+    });
+    if (clearProviderTokenError) throw clearProviderTokenError;
+  }
+  await AsyncStorage.removeItem(GMAIL_CONNECT_PENDING_KEY);
+  await useGmailStore.getState().loadConnection();
+  await useGmailStore.getState().loadImportedTransactions();
+}
 
 export const useAuthStore = create<AuthState>((set) => ({
   session: null,
@@ -46,6 +94,25 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { data: sessionData, error } = await supabase.auth.getSession();
       if (error) throw error;
       set({ session: sessionData.session, isLoading: false, error: null });
+
+      const pendingGmailConnection = await AsyncStorage.getItem(GMAIL_CONNECT_PENDING_KEY);
+      const refreshToken = sessionData.session?.provider_refresh_token;
+      if (pendingGmailConnection === 'true' && refreshToken) {
+        set({ isBusy: true });
+        try {
+          await saveGmailRefreshToken(refreshToken);
+        } catch (connectionError: unknown) {
+          await AsyncStorage.removeItem(GMAIL_CONNECT_PENDING_KEY);
+          set({
+            error: connectionError instanceof Error ? connectionError.message : 'No se pudo conectar Gmail.',
+          });
+        } finally {
+          set({ isBusy: false });
+        }
+      } else if (pendingGmailConnection === 'true') {
+        await AsyncStorage.removeItem(GMAIL_CONNECT_PENDING_KEY);
+        set({ error: 'Google no entregó autorización permanente para Gmail. Intenta conectar Gmail otra vez.' });
+      }
     } catch (error: unknown) {
       set({
         error: error instanceof Error ? error.message : 'No se pudo recuperar la sesión.',
@@ -93,6 +160,64 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     } catch (error: unknown) {
       set({ error: error instanceof Error ? error.message : 'No se pudo iniciar sesión.' });
+    } finally {
+      set({ isBusy: false });
+    }
+  },
+
+  connectGmail: async () => {
+    if (!supabase) {
+      set({ error: 'Configura Supabase para conectar Gmail.' });
+      return;
+    }
+
+    set({ isBusy: true, error: null });
+    let webRedirectStarted = false;
+    try {
+      const redirectTo =
+        Platform.OS === 'web' && typeof window !== 'undefined'
+          ? window.location.origin
+          : makeRedirectUri({ scheme: 'financia', path: 'auth/callback' });
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          scopes: 'openid email profile https://www.googleapis.com/auth/gmail.readonly',
+          queryParams: { access_type: 'offline', prompt: 'consent' },
+          skipBrowserRedirect: true,
+        },
+      });
+      if (error) throw error;
+      if (!data.url) throw new Error('Supabase no devolvió la URL para autorizar Gmail.');
+
+      if (Platform.OS === 'web') {
+        await AsyncStorage.setItem(GMAIL_CONNECT_PENDING_KEY, 'true');
+        webRedirectStarted = true;
+        window.location.assign(data.url);
+        return;
+      }
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (result.type !== 'success') return;
+
+      const callbackUrl = new URL(result.url);
+      const code = callbackUrl.searchParams.get('code');
+      const callbackError =
+        callbackUrl.searchParams.get('error_description') ?? callbackUrl.searchParams.get('error');
+      if (callbackError) throw new Error(callbackError);
+      if (!code) throw new Error('No se recibió el código para autorizar Gmail.');
+
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      if (exchangeError) throw exchangeError;
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const refreshToken = sessionData.session?.provider_refresh_token;
+      if (!refreshToken) throw new Error('Google no entregó autorización permanente para Gmail. Intenta conectar Gmail otra vez.');
+
+      await saveGmailRefreshToken(refreshToken);
+    } catch (error: unknown) {
+      if (webRedirectStarted) await AsyncStorage.removeItem(GMAIL_CONNECT_PENDING_KEY);
+      set({ error: error instanceof Error ? error.message : 'No se pudo conectar Gmail.' });
     } finally {
       set({ isBusy: false });
     }

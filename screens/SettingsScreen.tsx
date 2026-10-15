@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type { AppFontFamily } from '../store/useSettingsStore';
 import type { CardColor } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { useGmailStore } from '../store/useGmailStore';
 
 const ACCENT_COLORS = ['#8B5CF6', '#C026D3', '#EC4899', '#06B6D4', '#F97316', '#10B981'];
 const FONT_OPTIONS: { value: AppFontFamily; label: string; sample: string }[] = [
@@ -31,12 +32,24 @@ export default function SettingsScreen() {
   const authError = useAuthStore((state) => state.error);
   const signInWithProvider = useAuthStore((state) => state.signInWithProvider);
   const signOut = useAuthStore((state) => state.signOut);
+  const connectGmail = useAuthStore((state) => state.connectGmail);
+  const gmailConnection = useGmailStore((state) => state.connection);
+  const gmailLoading = useGmailStore((state) => state.isLoading);
+  const gmailError = useGmailStore((state) => state.error);
+  const loadGmailConnection = useGmailStore((state) => state.loadConnection);
+  const disconnectGmail = useGmailStore((state) => state.disconnect);
   const clearAllTransactions = useTransactionStore((state) => state.clearAllTransactions);
   const clearAllPockets = useSavingsStore((state) => state.clearAllPockets);
 
   useEffect(() => {
     if (!settings.isLoaded) settings.loadSettings();
   }, [settings.isLoaded, settings.loadSettings]);
+
+  useEffect(() => {
+    if (session) {
+      void loadGmailConnection();
+    }
+  }, [session?.user.id, loadGmailConnection]);
 
   const confirmDeleteData = () => {
     Alert.alert(
@@ -48,8 +61,12 @@ export default function SettingsScreen() {
           text: t('Borrar todo'),
           style: 'destructive',
           onPress: async () => {
-            await Promise.all([clearAllTransactions(), clearAllPockets()]);
-            Alert.alert(t('Datos eliminados'), t('Tu espacio financiero está listo para empezar de nuevo.'));
+            try {
+              await Promise.all([clearAllTransactions(), clearAllPockets()]);
+              Alert.alert(t('Datos eliminados'), t('Tu espacio financiero está listo para empezar de nuevo.'));
+            } catch {
+              Alert.alert(t('Error'), t('No se pudieron borrar los datos. Inténtalo de nuevo.'));
+            }
           },
         },
       ]
@@ -142,6 +159,55 @@ export default function SettingsScreen() {
           </>
         )}
       </View>
+
+      {session && (
+        <>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('Lectura automática de Gmail')}</Text>
+          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.rowLabel, { color: theme.text }]}>
+              {gmailConnection ? t('Gmail conectado') : t('Conectar avisos bancarios de BHD')}
+            </Text>
+            <Text style={[styles.helperText, { color: theme.textSecondary }]}>
+              {gmailConnection
+                ? `${gmailConnection.gmail_email} · ${t('Última consulta')}: ${new Date(gmailConnection.last_synced_at).toLocaleString(settings.language === 'es' ? 'es-DO' : 'en-US')}`
+                : t('Autoriza lectura de solo consulta de Gmail. Se revisan avisos de BHD de los últimos 90 días y luego cada 15 minutos.')}
+            </Text>
+            {gmailConnection?.last_error && (
+              <Text style={[styles.authError, { color: theme.expense }]}>{t(gmailConnection.last_error)}</Text>
+            )}
+            {gmailError && <Text style={[styles.authError, { color: theme.expense }]}>{gmailError}</Text>}
+            {gmailConnection ? (
+              <Pressable
+                accessibilityRole="button"
+                disabled={gmailLoading}
+                style={[styles.authButton, { borderColor: theme.border, backgroundColor: theme.surfaceMuted }]}
+                onPress={() => void disconnectGmail()}
+              >
+                {gmailLoading ? <ActivityIndicator color={settings.accentColor} /> : (
+                  <Text style={[styles.authButtonText, { color: theme.text }]}>{t('Desconectar Gmail')}</Text>
+                )}
+              </Pressable>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                disabled={!authConfigured || authBusy || gmailLoading}
+                style={[styles.authButton, { borderColor: theme.border, backgroundColor: theme.surfaceMuted }, (!authConfigured || authBusy || gmailLoading) && styles.authButtonDisabled]}
+                onPress={() => void connectGmail()}
+              >
+                {authBusy || gmailLoading ? <ActivityIndicator color={settings.accentColor} /> : (
+                  <>
+                    <MaterialCommunityIcons name="gmail" size={20} color={theme.text} />
+                    <Text style={[styles.authButtonText, { color: theme.text }]}>{t('Autorizar Gmail de solo lectura')}</Text>
+                  </>
+                )}
+              </Pressable>
+            )}
+            <Text style={[styles.helperText, { color: theme.textSecondary, marginTop: 10 }]}>
+              {t('Google concede este permiso para toda la bandeja. Financia solo consulta los dos remitentes de BHD admitidos y guarda los movimientos extraídos, no los correos.')}
+            </Text>
+          </View>
+        </>
+      )}
 
       <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('Personalización')}</Text>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
