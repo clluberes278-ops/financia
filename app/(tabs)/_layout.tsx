@@ -2,13 +2,14 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { useTranslation } from '../../utils/translations';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import { getThemeColors } from '../../utils/theme';
+import { getShadowStyle, getThemeColors } from '../../utils/theme';
 
 export default function TabLayout() {
   const { t } = useTranslation();
   const accentColor = useSettingsStore((state) => state.accentColor);
   const appTheme = useSettingsStore((state) => state.theme);
-  const theme = getThemeColors(appTheme);
+  const cardColor = useSettingsStore((state) => state.cardColor);
+  const theme = getThemeColors(appTheme, cardColor);
 
   return (
     <Tabs
@@ -16,7 +17,7 @@ export default function TabLayout() {
         headerStyle: {
           backgroundColor: theme.header,
           elevation: 0,
-          shadowOpacity: 0,
+          ...getShadowStyle({ color: '#000000', offsetX: 0, offsetY: 0, opacity: 0, radius: 0 }),
           borderBottomWidth: 0,
         },
         headerTitleStyle: {

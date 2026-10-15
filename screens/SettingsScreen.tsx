@@ -1,18 +1,36 @@
 import React, { useEffect } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Text as NativeText, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSavingsStore } from '../store/useSavingsStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { useTranslation } from '../utils/translations';
-import { getThemeColors, ThemedText } from '../utils/theme';
+import { CARD_COLOR_PALETTES, getFontFamily, getShadowStyle, getThemeColors, ThemedText, type AppThemeColors } from '../utils/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import type { AppFontFamily } from '../store/useSettingsStore';
+import type { CardColor } from '../store/useSettingsStore';
+import { useAuthStore } from '../store/useAuthStore';
 
-const ACCENT_COLORS = ['#4F46E5', '#0F766E', '#C2410C', '#BE123C', '#0369A1'];
+const ACCENT_COLORS = ['#8B5CF6', '#C026D3', '#EC4899', '#06B6D4', '#F97316', '#10B981'];
+const FONT_OPTIONS: { value: AppFontFamily; label: string; sample: string }[] = [
+  { value: 'system', label: 'Sistema', sample: 'Ag' },
+  { value: 'rounded', label: 'Redondeada', sample: 'Ag' },
+  { value: 'serif', label: 'Serif', sample: 'Ag' },
+  { value: 'monospace', label: 'Monoespaciada', sample: 'Ag' },
+];
 const Text = ThemedText;
 
 export default function SettingsScreen() {
   const settings = useSettingsStore();
   const { t } = useTranslation();
-  const theme = getThemeColors(settings.theme);
+  const theme = getThemeColors(settings.theme, settings.cardColor);
+  const session = useAuthStore((state) => state.session);
+  const authLoading = useAuthStore((state) => state.isLoading);
+  const authBusy = useAuthStore((state) => state.isBusy);
+  const authConfigured = useAuthStore((state) => state.isConfigured);
+  const authError = useAuthStore((state) => state.error);
+  const signInWithProvider = useAuthStore((state) => state.signInWithProvider);
+  const signOut = useAuthStore((state) => state.signOut);
   const clearAllTransactions = useTransactionStore((state) => state.clearAllTransactions);
   const clearAllPockets = useSavingsStore((state) => state.clearAllPockets);
 
@@ -40,13 +58,18 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <View style={styles.intro}>
-        <View style={[styles.iconCircle, { backgroundColor: settings.accentColor }]}><Text style={styles.icon}>⚙️</Text></View>
+      <LinearGradient
+        colors={[theme.heroStart, theme.heroEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.intro}
+      >
+        <View style={styles.iconCircle}><Text style={styles.icon}>✦</Text></View>
         <View style={styles.introText}>
-          <Text style={[styles.heading, { color: theme.text }]}>{t('Tu espacio, tus reglas')}</Text>
-          <Text style={[styles.description, { color: theme.textSecondary }]}>{t('Personaliza Financia para que se adapte a tu forma de organizar el dinero.')}</Text>
+          <Text style={styles.heading}>{t('Tu espacio, tus reglas')}</Text>
+          <Text style={styles.description}>{t('Personaliza Financia para que se adapte a tu forma de organizar el dinero.')}</Text>
         </View>
-      </View>
+      </LinearGradient>
 
       <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('General')}</Text>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -67,6 +90,59 @@ export default function SettingsScreen() {
         <Text style={[styles.helperText, { color: theme.textSecondary }]}>{t('La preferencia queda guardada para futuras sesiones.')}</Text>
       </View>
 
+      <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('Cuenta')}</Text>
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        {authLoading ? (
+          <ActivityIndicator color={settings.accentColor} />
+        ) : session ? (
+          <>
+            <Text style={[styles.rowLabel, { color: theme.text }]}>{t('Sesión iniciada')}</Text>
+            <Text style={[styles.helperText, { color: theme.textSecondary }]}>{session.user.email ?? session.user.id}</Text>
+            <Pressable
+              accessibilityRole="button"
+              disabled={authBusy}
+              style={[styles.authButton, { borderColor: theme.border, backgroundColor: theme.surfaceMuted }]}
+              onPress={() => void signOut()}
+            >
+              {authBusy ? <ActivityIndicator color={settings.accentColor} /> : <Text style={[styles.authButtonText, { color: theme.text }]}>{t('Cerrar sesión')}</Text>}
+            </Pressable>
+            {authError && <Text style={[styles.authError, { color: theme.expense }]}>{authError}</Text>}
+          </>
+        ) : (
+          <>
+            <Text style={[styles.rowLabel, { color: theme.text }]}>{t('Inicia sesión con un proveedor')}</Text>
+            <Text style={[styles.helperText, { color: theme.textSecondary }]}>
+              {authConfigured
+                ? t('Los datos actuales se mantienen en este dispositivo; la sincronización en la nube aún no está activada.')
+                : t('Configura Supabase y activa los proveedores en el panel del proyecto para habilitar el inicio de sesión.')}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              disabled={!authConfigured || authBusy}
+              style={[styles.authButton, { borderColor: theme.border, backgroundColor: theme.surfaceMuted }, (!authConfigured || authBusy) && styles.authButtonDisabled]}
+              onPress={() => void signInWithProvider('google')}
+            >
+              {authBusy ? <ActivityIndicator color={settings.accentColor} /> : (
+                <>
+                  <MaterialCommunityIcons name="google" size={19} color={theme.text} />
+                  <Text style={[styles.authButtonText, { color: theme.text }]}>{t('Continuar con Google')}</Text>
+                </>
+              )}
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={!authConfigured || authBusy}
+              style={[styles.authButton, { borderColor: theme.border, backgroundColor: theme.surfaceMuted }, (!authConfigured || authBusy) && styles.authButtonDisabled]}
+              onPress={() => void signInWithProvider('apple')}
+            >
+              <MaterialCommunityIcons name="apple" size={20} color={theme.text} />
+              <Text style={[styles.authButtonText, { color: theme.text }]}>{t('Continuar con Apple')}</Text>
+            </Pressable>
+            {authError && <Text style={[styles.authError, { color: theme.expense }]}>{authError}</Text>}
+          </>
+        )}
+      </View>
+
       <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('Personalización')}</Text>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <Text style={[styles.rowLabel, { color: theme.text }]}>{t('Color de acento')}</Text>
@@ -75,10 +151,62 @@ export default function SettingsScreen() {
             <Pressable
               key={color}
               accessibilityLabel={`Seleccionar color ${color}`}
-              style={[styles.colorButton, { backgroundColor: color }, settings.accentColor === color && styles.selectedColor]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: settings.accentColor === color }}
+              style={[
+                styles.colorButton,
+                { backgroundColor: color },
+                settings.accentColor === color && styles.selectedColor,
+              ]}
               onPress={() => settings.setAccentColor(color)}
-            />
+            >
+              {settings.accentColor === color && <Text style={styles.selectedColorCheck}>✓</Text>}
+            </Pressable>
           ))}
+        </View>
+        <Text style={[styles.rowLabel, { color: theme.text, marginTop: 4 }]}>{t('Color de tarjetas')}</Text>
+        <View style={styles.colorRow}>
+          {(Object.keys(CARD_COLOR_PALETTES) as CardColor[]).map((color) => {
+            const isSelected = settings.cardColor === color;
+            return (
+              <Pressable
+                key={color}
+                accessibilityLabel={`${t('Color de tarjetas')}: ${t(CARD_COLOR_PALETTES[color].label)}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                style={[
+                  styles.colorButton,
+                  { backgroundColor: CARD_COLOR_PALETTES[color].gradient[0] },
+                  isSelected && styles.selectedColor,
+                ]}
+                onPress={() => settings.setCardColor(color)}
+              >
+                {isSelected && <Text style={styles.selectedColorCheck}>✓</Text>}
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text style={[styles.rowLabel, { color: theme.text, marginTop: 8 }]}>{t('Tipo de letra')}</Text>
+        <View style={styles.fontOptions}>
+          {FONT_OPTIONS.map((option) => {
+            const isSelected = settings.fontFamily === option.value;
+            return (
+              <Pressable
+                key={option.value}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                onPress={() => settings.setFontFamily(option.value)}
+                style={[
+                  styles.fontOption,
+                  { backgroundColor: theme.surfaceMuted, borderColor: theme.border },
+                  isSelected && { backgroundColor: `${settings.accentColor}18`, borderColor: settings.accentColor },
+                ]}
+              >
+                <NativeText style={[styles.fontSample, { color: isSelected ? settings.accentColor : theme.text }, getFontFamily(option.value) ? { fontFamily: getFontFamily(option.value) } : undefined]}>{option.sample}</NativeText>
+                <Text style={[styles.fontLabel, { color: isSelected ? settings.accentColor : theme.textSecondary }]}>{option.label}</Text>
+              </Pressable>
+            );
+          })}
         </View>
         <Text style={[styles.rowLabel, { color: theme.text, marginTop: 12 }]}>{t('Tema')}</Text>
         <View style={styles.optionRow}>
@@ -102,14 +230,6 @@ export default function SettingsScreen() {
           accentColor={settings.accentColor}
           theme={theme}
         />
-        <SettingRow
-          label={t('Bloqueo Biométrico')}
-          description={t('Requiere huella o rostro para entrar a la aplicación.')}
-          value={settings.biometricLockEnabled}
-          onValueChange={settings.setBiometricLockEnabled}
-          accentColor={settings.accentColor}
-          theme={theme}
-        />
       </View>
 
       <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('Avisos y privacidad')}</Text>
@@ -128,7 +248,7 @@ export default function SettingsScreen() {
             <Text>🗑️</Text>
           </View>
           <View style={styles.rowCopy}>
-            <Text style={[styles.dangerLabel, { color: '#EF4444' }]}>{t('Borrar todos los datos')}</Text>
+            <Text style={[styles.dangerLabel, { color: theme.expense }]}>{t('Borrar todos los datos')}</Text>
             <Text style={[styles.helperText, { color: theme.textSecondary }]}>{t('Movimientos y bolsillos guardados en este dispositivo.')}</Text>
           </View>
           <Text style={[styles.chevron, { color: theme.textMuted }]}>›</Text>
@@ -153,7 +273,7 @@ function SettingRow({
   value: boolean;
   onValueChange: (value: boolean) => void;
   accentColor: string;
-  theme: any;
+  theme: AppThemeColors;
 }) {
   return (
     <View style={styles.settingRow}>
@@ -169,23 +289,32 @@ function SettingRow({
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: 16, paddingBottom: 36 },
-  intro: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
-  iconCircle: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  icon: { fontSize: 25 },
+  intro: { flexDirection: 'row', alignItems: 'center', marginBottom: 26, padding: 18, borderRadius: 26, minHeight: 116 },
+  iconCircle: { width: 52, height: 52, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginRight: 14, backgroundColor: 'rgba(255,255,255,0.18)' },
+  icon: { fontSize: 26, color: '#FFFFFF', fontWeight: '800' },
   introText: { flex: 1 },
-  heading: { fontSize: 20, fontWeight: '800' },
-  description: { fontSize: 13, lineHeight: 19, marginTop: 3 },
-  sectionTitle: { fontSize: 12, fontWeight: '800', letterSpacing: 0.7, textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 },
-  card: { borderRadius: 24, padding: 16, marginBottom: 20, borderWidth: 1 },
+  heading: { fontSize: 19, fontWeight: '800', color: '#FFFFFF' },
+  description: { color: 'rgba(255,255,255,0.8)', fontSize: 12, lineHeight: 18, marginTop: 5 },
+  sectionTitle: { fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 9, marginLeft: 6 },
+  card: { borderRadius: 22, padding: 17, marginBottom: 22, borderWidth: 1, ...getShadowStyle({ color: '#32145A', offsetX: 0, offsetY: 5, opacity: 0.05, radius: 12, elevation: 2 }) },
   rowLabel: { fontSize: 15, fontWeight: '700' },
   optionRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
-  languageOption: { flex: 1, borderRadius: 12, paddingVertical: 11, alignItems: 'center' },
+  languageOption: { flex: 1, borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
   languageText: { fontSize: 13, fontWeight: '700' },
   activeOptionText: { color: '#FFFFFF' },
   helperText: { fontSize: 12, lineHeight: 17, marginTop: 4 },
-  colorRow: { flexDirection: 'row', gap: 14, marginTop: 14, marginBottom: 18 },
-  colorButton: { width: 30, height: 30, borderRadius: 15 },
-  selectedColor: { borderWidth: 3, borderColor: '#FFFFFF', shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 4, elevation: 4 },
+  authButton: { minHeight: 46, borderWidth: 1, borderRadius: 14, marginTop: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  authButtonText: { fontSize: 14, fontWeight: '700' },
+  authButtonDisabled: { opacity: 0.55 },
+  authError: { fontSize: 12, lineHeight: 17, marginTop: 10 },
+  colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 14, marginBottom: 18 },
+  colorButton: { width: 38, height: 38, borderRadius: 19, borderWidth: 2, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  selectedColor: { borderWidth: 3, borderColor: '#FFFFFF', ...getShadowStyle({ color: '#000000', offsetX: 0, offsetY: 0, opacity: 0.25, radius: 4, elevation: 4 }) },
+  selectedColorCheck: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  fontOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  fontOption: { flexGrow: 1, flexBasis: '45%', minWidth: 120, minHeight: 76, borderRadius: 16, borderWidth: 1, padding: 10, alignItems: 'center', justifyContent: 'center' },
+  fontSample: { fontSize: 23, fontWeight: '800' },
+  fontLabel: { fontSize: 11, fontWeight: '700', marginTop: 4 },
   settingRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16 },
   rowCopy: { flex: 1 },
   divider: { height: 1, marginVertical: 16 },

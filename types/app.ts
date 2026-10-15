@@ -1,15 +1,7 @@
-export interface BiometricLockOverlayProps {
-  onAuthenticated: () => void;
-}
+import type { RefObject } from 'react';
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 export interface TransactionBottomSheetProps {
-  bottomSheetRef: any; // To be refined further once @gorhom/bottom-sheet types are fully resolved
+  bottomSheetRef: RefObject<BottomSheetModal | null>;
   initialType: 'gasto' | 'ingreso';
-}
-
-export interface TransactionModalProps {
-  visible: boolean;
-  onClose: () => void;
-  type: 'gasto' | 'ingreso';
-  onSave: (transaction: any) => void;
 }

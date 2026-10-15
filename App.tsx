@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { Text, AppState, AppStateStatus } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -13,40 +12,31 @@ import ReportsScreen from './screens/ReportsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import { useTranslation } from './utils/translations';
 import { useSettingsStore } from './store/useSettingsStore';
-import { getThemeColors } from './utils/theme';
-import BiometricLockOverlay from './components/BiometricLockOverlay';
+import { getFontFamily, getShadowStyle, getThemeColors } from './utils/theme';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import type { MainTabParamList } from './types/navigation';
+import { useAuthStore } from './store/useAuthStore';
+import WelcomeScreen from './screens/WelcomeScreen';
+import { ActivityIndicator, View } from 'react-native';
+import { ThemedText } from './utils/theme';
 
-const Tab = createBottomTabNavigator();
+const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export default function App() {
   const { t } = useTranslation();
+  const session = useAuthStore((state) => state.session);
+  const authLoading = useAuthStore((state) => state.isLoading);
+  const initializeAuth = useAuthStore((state) => state.initialize);
+  const [continueAsGuest, setContinueAsGuest] = useState(false);
   const accentColor = useSettingsStore((state) => state.accentColor);
   const appTheme = useSettingsStore((state) => state.theme);
-  const biometricLockEnabled = useSettingsStore((state) => state.biometricLockEnabled);
-  const theme = getThemeColors(appTheme);
-
-  const [isLocked, setIsLocked] = useState(false);
+  const fontFamily = useSettingsStore((state) => state.fontFamily);
+  const cardColor = useSettingsStore((state) => state.cardColor);
+  const theme = getThemeColors(appTheme, cardColor);
 
   useEffect(() => {
-    // Bloqueo inicial inmediato si está activado en los ajustes
-    if (biometricLockEnabled) {
-      setIsLocked(true);
-    }
-
-    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active' && biometricLockEnabled) {
-        setIsLocked(true);
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [biometricLockEnabled]);
-
-  const handleAuthenticated = () => {
-    setIsLocked(false);
-  };
+    void initializeAuth();
+  }, [initializeAuth]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -54,24 +44,28 @@ export default function App() {
         <SafeAreaProvider>
           <StatusBar style={appTheme === 'dark' ? 'light' : 'dark'} />
 
-          {isLocked && (
-            <BiometricLockOverlay onAuthenticated={handleAuthenticated} />
-          )}
-
           <NavigationContainer>
-            <Tab.Navigator
+            {authLoading ? (
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background }}>
+                <ActivityIndicator size="large" color={accentColor} />
+                <ThemedText style={{ marginTop: 12 }}>{t('Preparando tu espacio financiero...')}</ThemedText>
+              </View>
+            ) : !session && !continueAsGuest ? (
+              <WelcomeScreen onContinueWithoutAccount={() => setContinueAsGuest(true)} />
+            ) : (
+              <Tab.Navigator
 
               screenOptions={{
                 headerStyle: {
                   backgroundColor: theme.header,
-                  elevation: 0,
-                  shadowOpacity: 0,
+                  ...getShadowStyle({ color: '#000000', offsetX: 0, offsetY: 0, opacity: 0, radius: 0 }),
                   borderBottomWidth: 0,
                 },
                 headerTitleStyle: {
                   fontWeight: '800',
                   fontSize: 18,
                   letterSpacing: -0.3,
+                  fontFamily: getFontFamily(fontFamily),
                 },
                 headerTintColor: theme.headerText,
                 tabBarActiveTintColor: accentColor,
@@ -79,13 +73,23 @@ export default function App() {
                 tabBarStyle: {
                   backgroundColor: theme.surface,
                   borderTopColor: theme.border,
-                  height: 60,
-                  paddingBottom: 8,
-                  paddingTop: 6,
+                  borderTopWidth: 1,
+                  height: 72,
+                  paddingBottom: 10,
+                  paddingTop: 8,
+                  ...getShadowStyle({
+                    color: '#281047',
+                    offsetX: 0,
+                    offsetY: -5,
+                    opacity: appTheme === 'dark' ? 0.18 : 0.08,
+                    radius: 14,
+                    elevation: 16,
+                  }),
                 },
                 tabBarLabelStyle: {
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: '700',
+                  fontFamily: getFontFamily(fontFamily),
                 },
               }}
             >
@@ -95,8 +99,8 @@ export default function App() {
                 options={{
                   title: t('Financia Smart Bank'),
                   tabBarLabel: t('Inicio'),
-                  tabBarIcon: ({ focused }) => (
-                    <Text style={{ fontSize: 20 }}>{focused ? '💳' : '🏦'}</Text>
+                  tabBarIcon: ({ color }) => (
+                    <MaterialCommunityIcons name="view-dashboard" size={22} color={color} />
                   ),
                 }}
               />
@@ -106,8 +110,8 @@ export default function App() {
                 options={{
                   title: t('Movimientos'),
                   tabBarLabel: t('Movimientos'),
-                  tabBarIcon: ({ focused }) => (
-                    <Text style={{ fontSize: 20 }}>{focused ? '💸' : '📄'}</Text>
+                  tabBarIcon: ({ color }) => (
+                    <MaterialCommunityIcons name="receipt-text" size={22} color={color} />
                   ),
                 }}
               />
@@ -117,8 +121,8 @@ export default function App() {
                 options={{
                   title: t('Bolsillos & Ahorro'),
                   tabBarLabel: t('Ahorro'),
-                  tabBarIcon: ({ focused }) => (
-                    <Text style={{ fontSize: 20 }}>{focused ? '🎯' : '🐖'}</Text>
+                  tabBarIcon: ({ color }) => (
+                    <MaterialCommunityIcons name="bullseye-arrow" size={22} color={color} />
                   ),
                 }}
               />
@@ -128,8 +132,8 @@ export default function App() {
                 options={{
                   title: t('Informes Financieros'),
                   tabBarLabel: t('Informes'),
-                  tabBarIcon: ({ focused }) => (
-                    <Text style={{ fontSize: 20 }}>{focused ? '📈' : '📊'}</Text>
+                  tabBarIcon: ({ color }) => (
+                    <MaterialCommunityIcons name="chart-donut" size={22} color={color} />
                   ),
                 }}
               />
@@ -139,12 +143,13 @@ export default function App() {
                 options={{
                   title: t('Configuración'),
                   tabBarLabel: t('Ajustes'),
-                  tabBarIcon: ({ focused }) => (
-                    <Text style={{ fontSize: 20 }}>{focused ? '⚙️' : '🔧'}</Text>
+                  tabBarIcon: ({ color }) => (
+                    <MaterialCommunityIcons name="cog-outline" size={22} color={color} />
                   ),
                 }}
               />
-            </Tab.Navigator>
+              </Tab.Navigator>
+            )}
           </NavigationContainer>
         </SafeAreaProvider>
       </BottomSheetModalProvider>

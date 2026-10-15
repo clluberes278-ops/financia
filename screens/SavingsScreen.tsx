@@ -18,7 +18,8 @@ import { SavingsPocket } from '../types/savings';
 import { formatCurrency, calculateBalance } from '../utils/calculations';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
-import { getThemeColors, ThemedText } from '../utils/theme';
+import { getShadowStyle, getThemeColors, ThemedText } from '../utils/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const POPULAR_EMOJIS = ['📱', '🚗', '🛡️', '🏖️', '💻', '🏠', '🎓', '🎁', '🎮', '🐖'];
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000];
@@ -30,7 +31,8 @@ export default function SavingsScreen() {
   const { transactions, addTransaction } = useTransactionStore();
   const accentColor = useSettingsStore((state) => state.accentColor);
   const appTheme = useSettingsStore((state) => state.theme);
-  const theme = getThemeColors(appTheme);
+  const cardColor = useSettingsStore((state) => state.cardColor);
+  const theme = getThemeColors(appTheme, cardColor);
   const { t } = useTranslation();
 
   const mainBalance = calculateBalance(transactions);
@@ -78,6 +80,8 @@ export default function SavingsScreen() {
       setNewPocketTarget('');
       setSelectedEmoji('📱');
       setCreateModalVisible(false);
+    } catch {
+      Alert.alert(t('Error'), t('No se pudo crear el bolsillo. Inténtalo de nuevo.'));
     } finally {
       setIsCreating(false);
     }
@@ -130,6 +134,8 @@ export default function SavingsScreen() {
       Keyboard.dismiss();
       setActionModalVisible(false);
       setActionAmount('');
+    } catch {
+      Alert.alert(t('Error'), t('No se pudo completar la operación. Inténtalo de nuevo.'));
     } finally {
       setIsProcessingAction(false);
     }
@@ -170,36 +176,41 @@ export default function SavingsScreen() {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.summaryCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <LinearGradient
+          colors={[theme.heroStart, theme.heroEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0.9 }}
+          style={styles.summaryCard}
+        >
           <View style={styles.summaryHeader}>
             <View>
-              <Text style={[styles.summaryBadgeTitle, { color: theme.textSecondary }]}>{t('BOLSAS & METAS DE AHORRO')}</Text>
-              <Text style={[styles.summaryMainAmount, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{formatCurrency(totalSaved)}</Text>
+              <Text style={styles.summaryBadgeTitle}>{t('BOLSAS & METAS DE AHORRO')}</Text>
+              <Text style={styles.summaryMainAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{formatCurrency(totalSaved)}</Text>
             </View>
-            <View style={[styles.countBadge, { backgroundColor: `${accentColor}15` }]}>
-              <Text style={[styles.countBadgeText, { color: accentColor }]}>{pockets.length} {pockets.length === 1 ? t('meta') : t('metas')}</Text>
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>{pockets.length} {pockets.length === 1 ? t('meta') : t('metas')}</Text>
             </View>
           </View>
 
           {totalTarget > 0 && (
             <View style={styles.summaryProgressSection}>
               <View style={styles.summaryProgressLabels}>
-                <Text style={[styles.summaryTargetText, { color: theme.textSecondary }]}>{t('Objetivo global')}: {formatCurrency(totalTarget)}</Text>
-                <Text style={[styles.summaryPercentText, { color: accentColor }]}>{globalProgress}%</Text>
+                <Text style={styles.summaryTargetText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{t('Objetivo global')}: {formatCurrency(totalTarget)}</Text>
+                <Text style={styles.summaryPercentText}>{globalProgress}%</Text>
               </View>
-              <View style={[styles.summaryBarBg, { backgroundColor: theme.surfaceMuted }]}>
-                <View style={[styles.summaryBarFill, { width: `${globalProgress}%`, backgroundColor: accentColor }]} />
+              <View style={styles.summaryBarBg}>
+                <LinearGradient colors={['#FDE68A', '#FFFFFF']} style={[styles.summaryBarFill, { width: `${globalProgress}%` }]} />
               </View>
             </View>
           )}
 
           <Pressable
-            style={[styles.newPocketPrimaryBtn, { backgroundColor: accentColor }]}
+            style={styles.newPocketPrimaryBtn}
             onPress={() => setCreateModalVisible(true)}
           >
             <Text style={styles.newPocketPrimaryBtnText}>＋ {t('Crear Nuevo Bolsillo de Ahorro')}</Text>
           </Pressable>
-        </View>
+        </LinearGradient>
 
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('Tus Cuentas de Ahorro')}</Text>
@@ -239,18 +250,18 @@ export default function SavingsScreen() {
                         <Text style={[styles.pocketName, { color: theme.text }]} numberOfLines={1}>
                           {pocket.name}
                         </Text>
-                        <Text style={[styles.pocketTargetText, { color: theme.textSecondary }]} numberOfLines={1}>
+                        <Text style={[styles.pocketTargetText, { color: theme.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
                           Meta: {formatCurrency(pocket.targetAmount)}
                         </Text>
                       </View>
                     </View>
 
                     {isCompleted ? (
-                      <View style={styles.badgeCompleted}><Text style={styles.badgeCompletedText}>🏆 100%</Text></View>
+                      <View style={styles.badgeCompleted}><Text style={[styles.badgeCompletedText, { color: theme.income }]}>🏆 100%</Text></View>
                     ) : isAlmostDone ? (
-                      <View style={styles.badgeAlmost}><Text style={styles.badgeAlmostText}>🔔 {progress}%</Text></View>
+                      <View style={styles.badgeAlmost}><Text style={[styles.badgeAlmostText, { color: theme.warning }]}>🔔 {progress}%</Text></View>
                     ) : (
-                      <View style={styles.badgeProgress}><Text style={styles.badgeProgressText}>{progress}%</Text></View>
+                      <View style={styles.badgeProgress}><Text style={[styles.badgeProgressText, { color: accentColor }]}>{progress}%</Text></View>
                     )}
                   </View>
 
@@ -263,14 +274,14 @@ export default function SavingsScreen() {
                     </View>
                     <View style={styles.pocketRemainingCol}>
                       <Text style={[styles.pocketRemainingLabel, { color: theme.textSecondary }]}>{t('Estado')}</Text>
-                      <Text style={[styles.pocketRemaining, { color: theme.textSecondary }]} numberOfLines={1}>
+                      <Text style={[styles.pocketRemaining, { color: theme.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
                         {isCompleted ? t('Completado') : `${t('Falta')} ${formatCurrency(pocket.targetAmount - pocket.currentAmount)}`}
                       </Text>
                     </View>
                   </View>
 
                   <View style={styles.pocketBarBg}>
-                    <View style={[styles.pocketBarFill, { width: `${progress}%`, backgroundColor: isCompleted ? '#10B981' : isAlmostDone ? '#F59E0B' : accentColor }]} />
+                    <View style={[styles.pocketBarFill, { width: `${progress}%`, backgroundColor: isCompleted ? theme.income : isAlmostDone ? theme.warning : accentColor }]} />
                   </View>
 
                   <View style={styles.pocketActionsRow}>
@@ -392,7 +403,7 @@ export default function SavingsScreen() {
                       : `Disponible en bolsillo: ${formatCurrency(selectedPocket?.currentAmount || 0)}`}
                   </Text>
                   {actionType === 'abonar' && (
-                    <Text style={[styles.modalSubtitleSub, { color: theme.textScondary }]}>
+                    <Text style={[styles.modalSubtitleSub, { color: theme.textSecondary }]}>
                       Ahorrado actualmente: {formatCurrency(selectedPocket?.currentAmount || 0)} / {formatCurrency(selectedPocket?.targetAmount || 0)}
                     </Text>
                   )}
@@ -433,7 +444,7 @@ export default function SavingsScreen() {
                 <Pressable
                   style={[
                     styles.modalSubmitBtn,
-                    actionType === 'retirar' && { backgroundColor: '#EF4444' },
+                    actionType === 'retirar' && { backgroundColor: theme.expense },
                     isProcessingAction && styles.disabledButton,
                   ]}
                   onPress={handleConfirmAction}
@@ -456,23 +467,23 @@ const styles = StyleSheet.create({
   screenWrapper: { flex: 1 },
   container: { flex: 1 },
   contentContainer: { padding: 16, paddingBottom: 40 },
-  summaryCard: { borderRadius: 32, padding: 24, marginBottom: 24, borderWidth: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 8 },
+  summaryCard: { borderRadius: 30, padding: 22, marginBottom: 24, ...getShadowStyle({ color: '#7C3AED', offsetX: 0, offsetY: 12, opacity: 0.22, radius: 20, elevation: 8 }) },
   summaryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
-  summaryBadgeTitle: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 4 },
-  summaryMainAmount: { fontSize: 32, fontWeight: '800', letterSpacing: -0.5 },
-  countBadge: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12 },
-  countBadgeText: { fontSize: 12, fontWeight: '700' },
+  summaryBadgeTitle: { color: 'rgba(255,255,255,0.76)', fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 4 },
+  summaryMainAmount: { color: '#FFFFFF', fontSize: 32, fontWeight: '800', letterSpacing: -0.5 },
+  countBadge: { backgroundColor: 'rgba(255,255,255,0.18)', paddingVertical: 6, paddingHorizontal: 11, borderRadius: 14 },
+  countBadgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
   summaryProgressSection: { marginBottom: 16 },
   summaryProgressLabels: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  summaryTargetText: { fontSize: 12, fontWeight: '600' },
-  summaryPercentText: { fontSize: 12, fontWeight: '800' },
-  summaryBarBg: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  summaryTargetText: { color: 'rgba(255,255,255,0.78)', fontSize: 12, fontWeight: '600' },
+  summaryPercentText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
+  summaryBarBg: { height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.2)' },
   summaryBarFill: { height: 8, borderRadius: 4 },
-  newPocketPrimaryBtn: { paddingVertical: 14, borderRadius: 16, alignItems: 'center' },
-  newPocketPrimaryBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
+  newPocketPrimaryBtn: { backgroundColor: 'rgba(255,255,255,0.17)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)', paddingVertical: 14, borderRadius: 17, alignItems: 'center' },
+  newPocketPrimaryBtnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 14 },
   sectionHeader: { marginBottom: 12 },
   sectionTitle: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
-  emptyContainer: { borderRadius: 24, padding: 26, alignItems: 'center', marginTop: 20, borderWidth: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  emptyContainer: { borderRadius: 24, padding: 26, alignItems: 'center', marginTop: 20, borderWidth: 1, ...getShadowStyle({ color: '#000000', offsetX: 0, offsetY: 4, opacity: 0.05, radius: 10, elevation: 2 }) },
   emptyCircle: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
   emptyIcon: { fontSize: 32 },
   emptyHeading: { fontSize: 17, fontWeight: '800', marginBottom: 6 },
@@ -480,12 +491,12 @@ const styles = StyleSheet.create({
   emptyCreateBtn: { paddingVertical: 12, paddingHorizontal: 24, borderRadius: 12 },
   emptyCreateBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
   pocketsList: { gap: 14 },
-  pocketCard: { borderRadius: 24, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2, borderWidth: 1 },
+  pocketCard: { borderRadius: 23, padding: 17, ...getShadowStyle({ color: '#32145A', offsetX: 0, offsetY: 5, opacity: 0.07, radius: 10, elevation: 3 }), borderWidth: 1 },
   pocketTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   pocketTitleGroup: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, marginRight: 8 },
   pocketEmojiBox: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   pocketEmojiText: { fontSize: 20 },
-  pocketTitleTextCol: { flex: 1 },
+  pocketTitleTextCol: { flex: 1, minWidth: 0 },
   pocketName: { fontSize: 15, fontWeight: '800' },
   pocketTargetText: { fontSize: 11, fontWeight: '500', marginTop: 1 },
   badgeCompleted: { backgroundColor: 'rgba(16, 185, 129, 0.1)', paddingVertical: 3, paddingHorizontal: 8, borderRadius: 8 },
@@ -497,7 +508,7 @@ const styles = StyleSheet.create({
   pocketAmountsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8, gap: 8 },
   pocketAmountLabel: { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
   pocketCurrentAmount: { fontSize: 18, fontWeight: '800' },
-  pocketRemainingCol: { alignItems: 'flex-end', flexShrink: 1 },
+  pocketRemainingCol: { alignItems: 'flex-end', flexShrink: 1, flex: 1, minWidth: 0 },
   pocketRemainingLabel: { fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
   pocketRemaining: { fontSize: 12, fontWeight: '600' },
   pocketBarBg: { height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: 14 },
@@ -515,6 +526,9 @@ const styles = StyleSheet.create({
   modalHandle: { width: 44, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 14 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   modalTitle: { fontSize: 19, fontWeight: '800' },
+  modalAccountInfoRow: { borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 16 },
+  modalSubtitle: { fontSize: 13, fontWeight: '700' },
+  modalSubtitleSub: { fontSize: 11, marginTop: 4 },
   modalCloseBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   modalCloseText: { fontSize: 14, fontWeight: '700' },
   modalInputLabel: { fontSize: 12, fontWeight: '700', marginBottom: 8, textTransform: 'uppercase' },

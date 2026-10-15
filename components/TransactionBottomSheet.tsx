@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
-  Text as NativeText,
   TextInput,
   Pressable,
   StyleSheet,
@@ -10,16 +9,23 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Platform,
+  Alert,
 } from 'react-native';
-import { BottomSheetModal, BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import {
+  BottomSheetModal,
+  BottomSheetView,
+  BottomSheetBackdrop,
+  type BottomSheetBackdropProps,
+} from '@gorhom/bottom-sheet';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Category, CATEGORY_LABELS, TransactionType } from '../types/transaction';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
 import { getThemeColors, ThemedText } from '../utils/theme';
 
-import { TransactionBottomSheetProps } from '../types/app';
+import type { TransactionBottomSheetProps } from '../types/app';
 
 const CATEGORIES = Object.keys(CATEGORY_LABELS) as Category[];
 const Text = ThemedText;
@@ -31,7 +37,8 @@ export default function TransactionBottomSheet({
   const addTransaction = useTransactionStore((s) => s.addTransaction);
   const accentColor = useSettingsStore((s) => s.accentColor);
   const appTheme = useSettingsStore((s) => s.theme);
-  const theme = getThemeColors(appTheme);
+  const cardColor = useSettingsStore((s) => s.cardColor);
+  const theme = getThemeColors(appTheme, cardColor);
   const { t } = useTranslation();
 
   const [type, setType] = useState<TransactionType>(initialType);
@@ -71,13 +78,15 @@ export default function TransactionBottomSheet({
       setAmount('');
       setNote('');
       bottomSheetRef.current?.dismiss();
+    } catch {
+      Alert.alert(t('Error'), t('No se pudo guardar el movimiento. Inténtalo de nuevo.'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const renderBackdrop = useCallback(
-    (props: any) => (
+    (props: BottomSheetBackdropProps) => (
       <BottomSheetBackdrop
         {...props}
         disappearsOnIndex={-1}
@@ -113,7 +122,11 @@ export default function TransactionBottomSheet({
         >
           <View style={styles.typeSwitch}>
             <Pressable
-              style={[styles.typeButton, type === 'gasto' && styles.typeButtonActiveExpense]}
+              style={[
+                styles.typeButton,
+                { backgroundColor: theme.surfaceMuted },
+                type === 'gasto' && { backgroundColor: theme.expense },
+              ]}
               onPress={() => setType('gasto')}
             >
               <View style={styles.typeButtonContent}>
@@ -122,11 +135,15 @@ export default function TransactionBottomSheet({
                   size={18}
                   color={type === 'gasto' ? '#FFFFFF' : theme.textSecondary}
                 />
-                <Text style={type === 'gasto' ? styles.typeTextActive : styles.typeText}>{t('Gastos')}</Text>
+                <Text style={type === 'gasto' ? styles.typeTextActive : { color: theme.textSecondary }}>{t('Gastos')}</Text>
               </View>
             </Pressable>
             <Pressable
-              style={[styles.typeButton, type === 'ingreso' && styles.typeButtonActiveIncome]}
+              style={[
+                styles.typeButton,
+                { backgroundColor: theme.surfaceMuted },
+                type === 'ingreso' && { backgroundColor: theme.income },
+              ]}
               onPress={() => setType('ingreso')}
             >
               <View style={styles.typeButtonContent}>
@@ -135,7 +152,7 @@ export default function TransactionBottomSheet({
                   size={18}
                   color={type === 'ingreso' ? '#FFFFFF' : theme.textSecondary}
                 />
-                <Text style={type === 'ingreso' ? styles.typeTextActive : styles.typeText}>{t('Ingresos')}</Text>
+                <Text style={type === 'ingreso' ? styles.typeTextActive : { color: theme.textSecondary }}>{t('Ingresos')}</Text>
               </View>
             </Pressable>
           </View>
@@ -159,10 +176,10 @@ export default function TransactionBottomSheet({
                   setAmountError('Ingresa un monto mayor que cero.');
                 }
               }}
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={theme.textMuted}
             />
           </View>
-          {amountError ? <Text style={styles.errorText}>{amountError}</Text> : null}
+          {amountError ? <Text style={[styles.errorText, { color: theme.expense }]}>{amountError}</Text> : null}
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
             {CATEGORIES.map((c) => (
@@ -195,7 +212,7 @@ export default function TransactionBottomSheet({
               value={note}
               onChangeText={setNote}
               onSubmitEditing={Keyboard.dismiss}
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={theme.textMuted}
             />
           </View>
 
@@ -204,7 +221,9 @@ export default function TransactionBottomSheet({
             onPress={handleSubmit}
             disabled={isSubmitting}
           >
-            <Text style={styles.submitText}>{isSubmitting ? 'Guardando...' : 'Guardar'}</Text>
+            <LinearGradient colors={[accentColor, theme.heroEnd]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.submitGradient}>
+              <Text style={styles.submitText}>{isSubmitting ? 'Guardando...' : 'Guardar'}</Text>
+            </LinearGradient>
           </Pressable>
         </KeyboardAvoidingView>
         </BottomSheetView>
@@ -216,16 +235,16 @@ export default function TransactionBottomSheet({
 const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 22,
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
   },
   handleBar: {
     width: 44,
     height: 5,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#C4B5FD',
     borderRadius: 3,
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 18,
   },
   header: {
     flexDirection: 'row',
@@ -253,7 +272,7 @@ const styles = StyleSheet.create({
   typeButton: {
     flex: 1,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 16,
     backgroundColor: '#F0F0F5',
     alignItems: 'center',
   },
@@ -262,19 +281,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  typeButtonActiveExpense: { backgroundColor: '#EF4444' },
-  typeButtonActiveIncome: { backgroundColor: '#10B981' },
-  typeText: { color: '#5A5A66', fontWeight: '600' },
   typeTextActive: { color: '#FFFFFF', fontWeight: '700' },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E4E4EC',
-    borderRadius: 12,
+    borderRadius: 16,
     paddingHorizontal: 12,
     marginBottom: 16,
-    backgroundColor: '#FFFFFF',
     height: 50,
   },
   inputIcon: {
@@ -290,7 +304,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     backgroundColor: '#F0F0F5',
-    borderRadius: 20,
+    borderRadius: 16,
     marginRight: 8,
   },
   categoryChipContent: {
@@ -308,18 +322,19 @@ const styles = StyleSheet.create({
   },
   categoryChipActive: { backgroundColor: '#E0E7FF' },
   submitButton: {
-    backgroundColor: '#6366F1',
-    padding: 16,
-    borderRadius: 14,
-    alignItems: 'center',
+    borderRadius: 17,
+    overflow: 'hidden',
     marginTop: 10,
     marginBottom: 20,
+  },
+  submitGradient: {
+    padding: 16,
+    alignItems: 'center',
   },
   submitButtonDisabled: {
     opacity: 0.6,
   },
   errorText: {
-    color: '#EF4444',
     fontSize: 12,
     marginTop: -10,
     marginBottom: 12,

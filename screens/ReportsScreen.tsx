@@ -1,18 +1,19 @@
 import React, { useLayoutEffect, useState } from 'react';
 import {
   View,
-  Text as NativeText,
   StyleSheet,
   ScrollView,
   Pressable,
   Alert,
   ActivityIndicator,
-  Dimensions,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { PieChart, LineChart } from 'react-native-gifted-charts';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { exportReportAsPdf } from '../utils/generatePdf';
 import { exportTransactionsToCSV } from '../utils/export';
 import { useTransactionStore } from '../store/useTransactionStore';
@@ -30,21 +31,25 @@ import { CATEGORY_LABELS, Category } from '../types/transaction';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
-import { getThemeColors, ThemedText } from '../utils/theme';
+import { getShadowStyle, getThemeColors, ThemedText } from '../utils/theme';
+import type { MainTabParamList } from '../types/navigation';
 
 const Text = ThemedText;
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const PIE_COLORS = ['#4F46E5','#10B981','#F59E0B','#EF4444','#3B82F6','#8B5CF6','#EC4899','#06B6D4','#14B8A6'];
 
 export default function ReportsScreen() {
+  const { width: screenWidth } = useWindowDimensions();
+  const isNarrowScreen = screenWidth < 380;
+  const kpiCardWidth = isNarrowScreen ? screenWidth - 36 : (screenWidth - 48) / 2;
+  const pieRadius = Math.min(80, Math.max(52, (screenWidth - 200) / 2));
   const { transactions } = useTransactionStore();
   const accentColor = useSettingsStore((state) => state.accentColor);
   const appTheme = useSettingsStore((state) => state.theme);
-  const theme = getThemeColors(appTheme);
+  const cardColor = useSettingsStore((state) => state.cardColor);
+  const theme = getThemeColors(appTheme, cardColor);
   const { t } = useTranslation();
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
 
   const [isExporting, setIsExporting] = useState(false);
   const today = new Date();
@@ -240,7 +245,12 @@ export default function ReportsScreen() {
         )}
 
         {/* Resumen Ejecutivo del Mes */}
-        <View style={[styles.executiveCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <LinearGradient
+          colors={[theme.heroStart, theme.heroEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0.9 }}
+          style={styles.executiveCard}
+        >
           <View style={styles.cardHeaderRow}>
               <Text style={styles.executiveSubtitle}>{t('BALANCE MENSUAL')}</Text>
             <View
@@ -300,40 +310,40 @@ export default function ReportsScreen() {
                     styles.ratioFill,
                     {
                       width: `${expenseRatio}%`,
-                      backgroundColor: expenseRatio > 90 ? '#EF4444' : expenseRatio > 70 ? '#F59E0B' : '#10B981',
+                      backgroundColor: expenseRatio > 90 ? theme.expense : expenseRatio > 70 ? theme.warning : theme.income,
                     },
                   ]}
                 />
               </View>
             </View>
           )}
-        </View>
+        </LinearGradient>
 
         {/* Indicadores Clave (KPIs) */}
         <Text style={styles.sectionTitle}>{t('Métricas Inteligentes')}</Text>
         <View style={styles.kpiGrid}>
           {/* Promedio diario */}
-          <View style={[styles.kpiCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View style={[styles.kpiCard, { width: kpiCardWidth, backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={styles.kpiIcon}>📅</Text>
-            <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+            <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
               {formatCurrency(dailyAverage)}
             </Text>
             <Text style={styles.kpiLabel}>{t('Gasto promedio / día')}</Text>
           </View>
 
           {/* Tasa de ahorro */}
-          <View style={[styles.kpiCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View style={[styles.kpiCard, { width: kpiCardWidth, backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={styles.kpiIcon}>🎯</Text>
-            <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+            <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
               {savingsRate}%
             </Text>
             <Text style={styles.kpiLabel}>{t('Tasa de ahorro mensual')}</Text>
           </View>
 
           {/* Mayor gasto */}
-          <View style={[styles.kpiCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View style={[styles.kpiCard, { width: kpiCardWidth, backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={styles.kpiIcon}>🔥</Text>
-            <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+            <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
               {highestExpense ? formatCurrency(highestExpense.amount) : 'RD$ 0.00'}
             </Text>
             <Text style={styles.kpiLabel} numberOfLines={1}>
@@ -342,9 +352,9 @@ export default function ReportsScreen() {
           </View>
 
           {/* Operaciones del mes */}
-          <View style={[styles.kpiCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View style={[styles.kpiCard, { width: kpiCardWidth, backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={styles.kpiIcon}>🔢</Text>
-            <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+            <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
               {monthTransactions.length}
             </Text>
             <Text style={styles.kpiLabel}>{t('Movimientos en el mes')}</Text>
@@ -356,13 +366,13 @@ export default function ReportsScreen() {
           <>
             <Text style={styles.sectionTitle}>{t('Distribución visual de gastos')}</Text>
             <View style={[styles.chartCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <View style={styles.pieRow}>
+              <View style={[styles.pieRow, isNarrowScreen && styles.pieRowNarrow]}>
                 <PieChart
                   data={pieData}
                   donut
-                  radius={80}
-                  innerRadius={50}
-                  innerCircleColor={'#FFFFFF'}
+                  radius={pieRadius}
+                  innerRadius={pieRadius * 0.62}
+                  innerCircleColor={theme.surface}
                   centerLabelComponent={() => (
                     <View style={styles.pieCenterLabel}>
                       <Text style={styles.pieCenterValue} numberOfLines={1}>
@@ -372,7 +382,7 @@ export default function ReportsScreen() {
                     </View>
                   )}
                 />
-                <View style={styles.pieLegend}>
+                <View style={[styles.pieLegend, isNarrowScreen && styles.pieLegendNarrow]}>
                   {pieData.map((item, i) => (
                     <View key={i} style={styles.pieLegendItem}>
                       <View style={[styles.pieLegendDot, { backgroundColor: item.color }]} />
@@ -402,16 +412,16 @@ export default function ReportsScreen() {
               dataPointsColor={accentColor}
               dataPointsRadius={5}
               startFillColor={accentColor}
-              endFillColor={'#F8FAFC'}
+              endFillColor={theme.background}
               startOpacity={0.2}
               endOpacity={0.01}
               areaChart
               hideRules
               xAxisThickness={0}
               yAxisThickness={0}
-              yAxisTextStyle={{ color: '#94A3B8', fontSize: 10 }}
-              xAxisLabelTextStyle={{ color: '#64748B', fontSize: 11, fontWeight: '600' }}
-              width={SCREEN_WIDTH - 80}
+              yAxisTextStyle={{ color: theme.textMuted, fontSize: 10 }}
+              xAxisLabelTextStyle={{ color: theme.textSecondary, fontSize: 11, fontWeight: '600' }}
+              width={screenWidth - 80}
               height={140}
               curved
               isAnimated
@@ -460,7 +470,7 @@ export default function ReportsScreen() {
                   </View>
 
                   <View style={styles.catBarBackground}>
-                    <View style={[styles.catBarFill, { width: `${pct}%` }]} />
+                    <View style={[styles.catBarFill, { width: `${pct}%`, backgroundColor: accentColor }]} />
                   </View>
                 </View>
               );
@@ -494,6 +504,8 @@ export default function ReportsScreen() {
                     <Text
                       style={isIncome ? styles.tAmountIncome : styles.tAmountExpense}
                       numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.55}
                     >
                       {isIncome ? '+' : '-'} {formatCurrency(t.amount)}
                     </Text>
@@ -517,19 +529,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: 16,
+    padding: 18,
     paddingBottom: 40,
   },
   periodSelectorCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: 22,
+    padding: 16,
     marginBottom: 16,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    ...getShadowStyle({ color: '#0F172A', offsetX: 0, offsetY: 2, opacity: 0.04, radius: 6, elevation: 2 }),
   },
   periodIcon: {
     width: 42,
@@ -618,15 +626,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   executiveCard: {
-    backgroundColor: '#0F172A',
-    borderRadius: 22,
-    padding: 20,
+    borderRadius: 28,
+    padding: 21,
     marginBottom: 20,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    elevation: 6,
+    ...getShadowStyle({ color: '#7C3AED', offsetX: 0, offsetY: 10, opacity: 0.24, radius: 18, elevation: 7 }),
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -643,7 +646,7 @@ const styles = StyleSheet.create({
   savingsBadge: {
     paddingVertical: 4,
     paddingHorizontal: 10,
-    borderRadius: 12,
+    borderRadius: 14,
   },
   savingsBadgePositive: {
     backgroundColor: 'rgba(16, 185, 129, 0.15)',
@@ -739,7 +742,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '800',
     color: '#0F172A',
     marginBottom: 12,
@@ -752,15 +755,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   kpiCard: {
-    width: '48%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 14,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    borderRadius: 20,
+    padding: 15,
+    minWidth: 0,
+    borderWidth: 1,
+    ...getShadowStyle({ color: '#0F172A', offsetX: 0, offsetY: 2, opacity: 0.04, radius: 6, elevation: 2 }),
   },
   kpiIcon: {
     fontSize: 22,
@@ -782,14 +781,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   categoryCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 14,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 1.5,
+    borderWidth: 1,
+    ...getShadowStyle({ color: '#0F172A', offsetX: 0, offsetY: 2, opacity: 0.03, radius: 6, elevation: 1.5 }),
   },
   categoryHeader: {
     flexDirection: 'row',
@@ -845,11 +840,11 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   emptyStateCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     padding: 24,
     alignItems: 'center',
     marginBottom: 24,
+    borderWidth: 1,
   },
   emptyEmoji: {
     fontSize: 32,
@@ -867,14 +862,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   transactionsListCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 12,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 1.5,
+    borderWidth: 1,
+    ...getShadowStyle({ color: '#0F172A', offsetX: 0, offsetY: 2, opacity: 0.03, radius: 6, elevation: 1.5 }),
   },
   tRow: {
     flexDirection: 'row',
@@ -890,6 +881,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     flex: 1,
+    minWidth: 0,
   },
   tEmoji: {
     fontSize: 20,
@@ -908,11 +900,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: '#10B981',
+    flexShrink: 1,
+    maxWidth: '45%',
+    textAlign: 'right',
   },
   tAmountExpense: {
     fontSize: 13,
     fontWeight: '800',
     color: '#EF4444',
+    flexShrink: 1,
+    maxWidth: '45%',
+    textAlign: 'right',
   },
   exportButton: {
     backgroundColor: '#4F46E5',
@@ -921,11 +919,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    ...getShadowStyle({ color: '#4F46E5', offsetX: 0, offsetY: 4, opacity: 0.3, radius: 8, elevation: 4 }),
   },
   exportButtonDisabled: {
     opacity: 0.6,
@@ -942,16 +936,12 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   chartCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    borderRadius: 22,
     padding: 16,
     marginBottom: 24,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    ...getShadowStyle({ color: '#0F172A', offsetX: 0, offsetY: 2, opacity: 0.04, radius: 8, elevation: 2 }),
     overflow: 'hidden',
+    borderWidth: 1,
   },
   chartEmpty: {
     height: 100,
@@ -966,6 +956,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
+  },
+  pieRowNarrow: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
   },
   pieCenterLabel: {
     alignItems: 'center',
@@ -983,6 +977,10 @@ const styles = StyleSheet.create({
   pieLegend: {
     flex: 1,
     gap: 8,
+  },
+  pieLegendNarrow: {
+    width: '100%',
+    marginTop: 12,
   },
   pieLegendItem: {
     flexDirection: 'row',

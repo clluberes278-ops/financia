@@ -66,8 +66,24 @@ Con TestFlight, invitas a los testers por correo y ellos instalan la app "TestFl
 
 > Si por ahora no quieres pagar los $99/año, quédate probando en Expo Go (pasos de arriba) — funciona igual de bien para desarrollo, solo que no puedes generar un instalador independiente para otros en iOS.
 
+## Inicio de sesión con Supabase
+
+El inicio de sesión es opcional: Financia sigue funcionando en modo local si no configuras Supabase. La sesión de Google o Apple **no sincroniza todavía** los movimientos ni los bolsillos guardados en el dispositivo.
+
+1. En el panel de Supabase, copia el **Project URL** y la clave pública **anon** (o **publishable**) del proyecto.
+2. Crea un archivo `.env` en la raíz del proyecto (no compartas ni subas ese archivo) con:
+   ```env
+   EXPO_PUBLIC_SUPABASE_URL=https://TU-PROYECTO.supabase.co
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=TU_CLAVE_PUBLICA
+   ```
+   `.env.example` muestra los nombres de las variables. Nunca pongas una clave `service_role` en la app.
+3. En Supabase, habilita Google y/o Apple en **Authentication → Sign In / Providers** y configura allí las credenciales OAuth de cada proveedor.
+4. En **Authentication → URL Configuration → Redirect URLs**, permite el origen web de desarrollo (por ejemplo `http://localhost:8081/**`) y `financia://auth/callback`. Configura el callback del proveedor según la URL de callback que Supabase muestra para ese proveedor.
+5. Reinicia Expo después de editar `.env` y abre **Configuración → Cuenta**. En builds nativos, el esquema `financia` está configurado como URL de retorno.
+
+Las credenciales de OAuth de Google/Apple se crean en sus respectivas consolas y deben mantenerse en Supabase; la app solo contiene la clave pública de Supabase. Apple requiere una cuenta de Apple Developer para configurar el proveedor.
+
 ## Próximos pasos sugeridos
 - Agregar gráfico de pie real (librería `react-native-gifted-charts`) en vez de las barras simples.
 - Filtros por rango de fechas en el historial.
-- Autenticación con PIN o biometría (expo-local-authentication) para simular seguridad "bancaria".
 - Migrar de AsyncStorage a `expo-sqlite` si el volumen de datos crece mucho.

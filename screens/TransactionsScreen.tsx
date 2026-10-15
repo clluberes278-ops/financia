@@ -9,13 +9,14 @@ import {
 } from 'react-native';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { CATEGORY_LABELS, TransactionType } from '../types/transaction';
 import { formatCurrency, formatDate } from '../utils/calculations';
 import TransactionBottomSheet from '../components/TransactionBottomSheet';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
-import { getThemeColors, ThemedText } from '../utils/theme';
+import { getShadowStyle, getThemeColors, ThemedText } from '../utils/theme';
 
 type FilterType = 'todos' | 'gasto' | 'ingreso';
 const Text = ThemedText;
@@ -25,7 +26,8 @@ export default function TransactionsScreen() {
     useTransactionStore();
   const accentColor = useSettingsStore((state) => state.accentColor);
   const appTheme = useSettingsStore((state) => state.theme);
-  const theme = getThemeColors(appTheme);
+  const cardColor = useSettingsStore((state) => state.cardColor);
+  const theme = getThemeColors(appTheme, cardColor);
   const { t } = useTranslation();
 
   const bottomSheetRef = React.useRef<BottomSheetModal>(null);
@@ -75,16 +77,22 @@ export default function TransactionsScreen() {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const totalFilteredAmount = filteredTransactions.reduce((acc, t) => {
+    if (filter !== 'todos') return acc + t.amount;
     return t.type === 'ingreso' ? acc + t.amount : acc - t.amount;
   }, 0);
+  const totalLabel = filter === 'todos'
+    ? t('Balance neto')
+    : filter === 'gasto'
+      ? t('Total de gastos')
+      : t('Total de ingresos');
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Barra superior de acciones */}
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.topTitle}>{t('Historial Smart')}</Text>
-          <Text style={styles.topSubtitle}>
+          <Text style={[styles.topTitle, { color: theme.text }]}>{t('Historial Smart')}</Text>
+          <Text style={[styles.topSubtitle, { color: theme.textSecondary }]}>
             {filteredTransactions.length}{' '}
             {filteredTransactions.length === 1 ? t('movimiento') : t('movimientos')}
           </Text>
@@ -93,7 +101,7 @@ export default function TransactionsScreen() {
         <View style={styles.topActions}>
           {transactions.length > 0 && (
             <Pressable
-              style={styles.clearButton}
+              style={[styles.clearButton, { backgroundColor: theme.surfaceMuted }]}
               onPress={handleConfirmClear}
             >
               <MaterialCommunityIcons name="trash-can-outline" size={18} color={theme.textSecondary} />
@@ -101,6 +109,23 @@ export default function TransactionsScreen() {
           )}
         </View>
       </View>
+
+      <LinearGradient
+        colors={[theme.heroStart, theme.heroEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0.8 }}
+        style={styles.totalCard}
+      >
+        <View style={styles.totalCopy}>
+          <Text style={styles.totalLabel}>{totalLabel}</Text>
+          <Text style={styles.totalAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
+            {formatCurrency(totalFilteredAmount)}
+          </Text>
+        </View>
+        <View style={styles.totalIcon}>
+          <MaterialCommunityIcons name="swap-vertical" size={22} color="#FFFFFF" />
+        </View>
+      </LinearGradient>
 
       {/* Selector de Filtros */}
       <View style={styles.filterRow}>
@@ -164,8 +189,8 @@ export default function TransactionsScreen() {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={[styles.emptyCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={styles.emptyIconCircle}>
-              <MaterialCommunityIcons name="credit-card-outline" size={32} color="#4F46E5" />
+            <View style={[styles.emptyIconCircle, { backgroundColor: `${accentColor}18` }]}>
+              <MaterialCommunityIcons name="credit-card-outline" size={32} color={accentColor} />
             </View>
             <Text style={styles.emptyTitle}>{t('Sin movimientos aún')}</Text>
             <Text style={styles.emptyDescription}>
@@ -192,18 +217,27 @@ export default function TransactionsScreen() {
           };
 
           return (
-            <View style={[styles.transactionCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <View style={[
+              styles.transactionCard,
+              {
+                backgroundColor: theme.surface,
+                borderColor: theme.border,
+                borderLeftColor: isIncome ? theme.income : theme.expense,
+              },
+            ]}>
               <View style={styles.cardLeft}>
                 <View
                   style={[
                     styles.categoryAvatar,
-                    isIncome ? styles.avatarIncome : styles.avatarExpense,
+                    {
+                      backgroundColor: isIncome ? `${theme.income}20` : `${theme.expense}20`,
+                    },
                   ]}
                 >
                   <MaterialCommunityIcons
                     name={catInfo.emoji === '💰' ? 'cash' : 'tag-outline'}
                     size={22}
-                    color={isIncome ? '#10B981' : '#EF4444'}
+                    color={isIncome ? theme.income : theme.expense}
                   />
                 </View>
 
@@ -219,7 +253,7 @@ export default function TransactionsScreen() {
               </View>
 
               <View style={styles.cardRight}>
-                <Text style={isIncome ? styles.amountIncome : styles.amountExpense}>
+                <Text style={[isIncome ? styles.amountIncome : styles.amountExpense, { color: isIncome ? theme.income : theme.expense }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
                   {isIncome ? '+' : '-'} {formatCurrency(item.amount)}
                 </Text>
                 <Pressable
@@ -237,10 +271,12 @@ export default function TransactionsScreen() {
 
       {/* Botón Flotante de Acción Rápida (FAB) */}
       <Pressable
-        style={({ pressed }) => [styles.fabButton, { backgroundColor: accentColor }, pressed && styles.fabPressed]}
+        style={({ pressed }) => [styles.fabButton, getShadowStyle({ color: accentColor, offsetX: 0, offsetY: 6, opacity: 0.3, radius: 14, elevation: 8 }), pressed && styles.fabPressed]}
         onPress={() => handleOpenModal('gasto')}
       >
-        <MaterialCommunityIcons name="plus" size={32} color="#FFFFFF" />
+        <LinearGradient colors={[accentColor, theme.heroEnd]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fabGradient}>
+          <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
+        </LinearGradient>
       </Pressable>
 
       <TransactionBottomSheet
@@ -254,25 +290,22 @@ export default function TransactionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: 18,
+    paddingTop: 16,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 18,
   },
   topTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#0F172A',
     letterSpacing: -0.5,
   },
   topSubtitle: {
     fontSize: 13,
-    color: '#64748B',
     fontWeight: '500',
     marginTop: 1,
   },
@@ -295,13 +328,46 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 14,
+    marginBottom: 18,
+  },
+  totalCard: {
+    minHeight: 104,
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    ...getShadowStyle({ color: '#8B5CF6', offsetX: 0, offsetY: 8, opacity: 0.2, radius: 14, elevation: 5 }),
+  },
+  totalCopy: {
+    flex: 1,
+    marginRight: 12,
+  },
+  totalLabel: {
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 5,
+  },
+  totalAmount: {
+    color: '#FFFFFF',
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  totalIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterChip: {
     paddingVertical: 7,
     paddingHorizontal: 14,
-    borderRadius: 20,
-    backgroundColor: '#E2E8F0',
+    borderRadius: 14,
   },
   filterChipContent: {
     flexDirection: 'row',
@@ -314,7 +380,6 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#475569',
   },
   filterChipTextActive: {
     color: '#FFFFFF',
@@ -327,15 +392,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 14,
-    borderRadius: 16,
+    padding: 15,
+    borderRadius: 20,
+    borderLeftWidth: 3,
     marginBottom: 10,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1.5,
+    ...getShadowStyle({ color: '#0F172A', offsetX: 0, offsetY: 2, opacity: 0.04, radius: 6, elevation: 1.5 }),
   },
   cardLeft: {
     flexDirection: 'row',
@@ -381,16 +442,20 @@ const styles = StyleSheet.create({
   },
   cardRight: {
     alignItems: 'flex-end',
+    maxWidth: '48%',
+    flexShrink: 1,
   },
   amountIncome: {
     fontSize: 15,
     fontWeight: '800',
     color: '#10B981',
+    maxWidth: '100%',
   },
   amountExpense: {
     fontSize: 15,
     fontWeight: '800',
     color: '#EF4444',
+    maxWidth: '100%',
   },
   deleteAction: {
     marginTop: 4,
@@ -401,22 +466,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   emptyCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 26,
     padding: 24,
     alignItems: 'center',
     marginTop: 20,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    ...getShadowStyle({ color: '#0F172A', offsetX: 0, offsetY: 4, opacity: 0.05, radius: 10, elevation: 2 }),
   },
   emptyIconCircle: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#F3E8FF',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -439,9 +499,8 @@ const styles = StyleSheet.create({
   },
   emptyPrimaryBtn: {
     width: '100%',
-    backgroundColor: '#4F46E5',
     paddingVertical: 13,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
     marginBottom: 10,
   },
@@ -457,7 +516,6 @@ const styles = StyleSheet.create({
   },
   emptySecondaryBtn: {
     width: '100%',
-    backgroundColor: '#F1F5F9',
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
@@ -471,17 +529,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 24,
     right: 20,
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: '#4F46E5',
+    width: 60,
+    height: 60,
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  fabGradient: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 8,
   },
   fabPressed: {
     transform: [{ scale: 0.94 }],

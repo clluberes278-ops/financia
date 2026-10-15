@@ -13,10 +13,11 @@ import {
   Keyboard,
 } from 'react-native';
 import { Category, CATEGORY_LABELS, TransactionType } from '../types/transaction';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
-import { ThemedText } from '../utils/theme';
+import { getShadowStyle, getThemeColors, ThemedText } from '../utils/theme';
 
 const Text = ThemedText;
 
@@ -36,6 +37,9 @@ export default function TransactionModal({
 }: TransactionModalProps) {
   const addTransaction = useTransactionStore((s) => s.addTransaction);
   const accentColor = useSettingsStore((s) => s.accentColor);
+  const appTheme = useSettingsStore((s) => s.theme);
+  const cardColor = useSettingsStore((s) => s.cardColor);
+  const theme = getThemeColors(appTheme, cardColor);
   const { t } = useTranslation();
 
   const [type, setType] = useState<TransactionType>(initialType);
@@ -108,33 +112,34 @@ export default function TransactionModal({
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={styles.keyboardContainer}
           >
-            <View style={styles.sheet}>
+            <View style={[styles.sheet, { backgroundColor: theme.surface }]}>
               {/* Barra indicadora superior */}
-              <View style={styles.handleBar} />
+              <View style={[styles.handleBar, { backgroundColor: theme.border }]} />
 
               {/* Encabezado */}
               <View style={styles.header}>
                 <View>
-                  <Text style={styles.title}>{t('Registrar Movimiento')}</Text>
-                  <Text style={styles.subtitle}>Financia Smart Bank</Text>
+                  <Text style={[styles.title, { color: theme.text }]}>{t('Registrar Movimiento')}</Text>
+                  <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Financia Smart Bank</Text>
                 </View>
-                <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
-                  <Text style={styles.closeBtnText}>✕</Text>
+                <Pressable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.surfaceMuted }]} hitSlop={12}>
+                  <Text style={[styles.closeBtnText, { color: theme.textSecondary }]}>✕</Text>
                 </Pressable>
               </View>
 
               {/* Selector de Tipo (Gasto / Ingreso) */}
-              <View style={styles.typeSelectorContainer}>
+              <View style={[styles.typeSelectorContainer, { backgroundColor: theme.surfaceMuted }]}>
                 <Pressable
                   style={[
                     styles.typeOption,
-                    type === 'gasto' && styles.typeOptionExpenseActive,
+                    type === 'gasto' && { backgroundColor: theme.expense },
                   ]}
                   onPress={() => handleTypeChange('gasto')}
                 >
                   <Text
                     style={[
                       styles.typeOptionText,
+                      { color: theme.textSecondary },
                       type === 'gasto' && styles.typeOptionTextActive,
                     ]}
                   >
@@ -144,13 +149,14 @@ export default function TransactionModal({
                 <Pressable
                   style={[
                     styles.typeOption,
-                    type === 'ingreso' && styles.typeOptionIncomeActive,
+                    type === 'ingreso' && { backgroundColor: theme.income },
                   ]}
                   onPress={() => handleTypeChange('ingreso')}
                 >
                   <Text
                     style={[
                       styles.typeOptionText,
+                      { color: theme.textSecondary },
                       type === 'ingreso' && styles.typeOptionTextActive,
                     ]}
                   >
@@ -160,13 +166,13 @@ export default function TransactionModal({
               </View>
 
               {/* Campo de Monto Principal */}
-              <View style={styles.amountBox}>
-                <Text style={styles.currencyPrefix}>RD$</Text>
+              <View style={[styles.amountBox, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}>
+                <Text style={[styles.currencyPrefix, { color: accentColor }]}>RD$</Text>
                 <TextInput
-                  style={styles.amountInput}
+                  style={[styles.amountInput, { color: theme.text }]}
                   placeholder="0.00"
                   accessibilityLabel="Monto"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={theme.textMuted}
                   keyboardType="decimal-pad"
                   returnKeyType="next"
                   value={amount}
@@ -183,14 +189,14 @@ export default function TransactionModal({
                   autoFocus={false}
                 />
               </View>
-              {amountError ? <Text style={styles.errorText}>{amountError}</Text> : null}
+              {amountError ? <Text style={[styles.errorText, { color: theme.expense }]}>{amountError}</Text> : null}
 
               {/* Botones de incremento rápido */}
               <View style={styles.quickAmountsRow}>
                 {QUICK_AMOUNTS.map((val) => (
                   <Pressable
                     key={val}
-                    style={[styles.quickAmountBadge, { borderColor: accentColor }]}
+                    style={[styles.quickAmountBadge, { backgroundColor: theme.surfaceMuted, borderColor: accentColor }]}
                     onPress={() => handleAddQuickAmount(val)}
                   >
                     <Text style={[styles.quickAmountText, { color: accentColor }]}>+{val.toLocaleString()}</Text>
@@ -199,7 +205,7 @@ export default function TransactionModal({
               </View>
 
               {/* Selector de Categorías */}
-                <Text style={styles.sectionLabel}>{t('Categoría')}</Text>
+                <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>{t('Categoría')}</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -213,7 +219,11 @@ export default function TransactionModal({
                       key={c}
                       style={[
                         styles.categoryChip,
-                        isSelected && (type === 'gasto' ? styles.chipActiveExpense : styles.chipActiveIncome),
+                        { backgroundColor: theme.surfaceMuted, borderColor: theme.border },
+                        isSelected && {
+                          backgroundColor: `${type === 'gasto' ? theme.expense : theme.income}20`,
+                          borderColor: type === 'gasto' ? theme.expense : theme.income,
+                        },
                       ]}
                       onPress={() => setCategory(c)}
                     >
@@ -221,7 +231,8 @@ export default function TransactionModal({
                       <Text
                         style={[
                           styles.categoryName,
-                          isSelected && styles.categoryNameActive,
+                          { color: theme.textSecondary },
+                          isSelected && { color: theme.text, fontWeight: '800' },
                         ]}
                       >
                         {t(CATEGORY_LABELS[c].label)}
@@ -232,12 +243,12 @@ export default function TransactionModal({
               </ScrollView>
 
               {/* Campo de Nota / Concepto */}
-              <Text style={styles.sectionLabel}>{t('Concepto o detalle')}</Text>
+              <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>{t('Concepto o detalle')}</Text>
               <TextInput
-                style={styles.noteInput}
+                style={[styles.noteInput, { backgroundColor: theme.surfaceMuted, borderColor: theme.border, color: theme.text }]}
                 placeholder={t('Ej. Supermercado, Pago de nómina, Uber...')}
                 accessibilityLabel={t('Concepto o detalle')}
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.textMuted}
                 value={note}
                 onChangeText={setNote}
                 returnKeyType="done"
@@ -249,17 +260,22 @@ export default function TransactionModal({
               <Pressable
                 style={({ pressed }) => [
                   styles.saveButton,
-                  type === 'ingreso' ? styles.saveButtonIncome : styles.saveButtonExpense,
-                  type === 'gasto' && { backgroundColor: accentColor },
                   isSubmitting && styles.disabledButton,
                   pressed && styles.buttonPressed,
                 ]}
                 onPress={handleSubmit}
                 disabled={isSubmitting}
               >
-                <Text style={styles.saveButtonText}>
-                  {isSubmitting ? 'Guardando...' : type === 'ingreso' ? t('Guardar Ingreso') : t('Guardar Gasto')}
-                </Text>
+                <LinearGradient
+                  colors={type === 'ingreso' ? [theme.income, '#00B894'] : [accentColor, theme.heroEnd]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.saveButtonGradient}
+                >
+                  <Text style={styles.saveButtonText}>
+                    {isSubmitting ? 'Guardando...' : type === 'ingreso' ? t('Guardar Ingreso') : t('Guardar Gasto')}
+                  </Text>
+                </LinearGradient>
               </Pressable>
             </View>
           </KeyboardAvoidingView>
@@ -285,11 +301,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 20,
+    ...getShadowStyle({ color: '#000000', offsetX: 0, offsetY: -4, opacity: 0.15, radius: 12, elevation: 20 }),
   },
   handleBar: {
     width: 44,
@@ -462,15 +474,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   saveButton: {
-    paddingVertical: 15,
     borderRadius: 14,
-    alignItems: 'center',
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    overflow: 'hidden',
+    ...getShadowStyle({ color: '#4F46E5', offsetX: 0, offsetY: 4, opacity: 0.25, radius: 8, elevation: 4 }),
   },
+  saveButtonGradient: { paddingVertical: 15, alignItems: 'center' },
   saveButtonExpense: {
     backgroundColor: '#EF4444',
   },
