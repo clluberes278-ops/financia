@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text as NativeText, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSavingsStore } from '../store/useSavingsStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTransactionStore } from '../store/useTransactionStore';
@@ -48,7 +48,7 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>{t('General')}</Text>
+      <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('General')}</Text>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <Text style={[styles.rowLabel, { color: theme.text }]}>{t('Idioma')}</Text>
         <View style={styles.optionRow}>
@@ -67,7 +67,7 @@ export default function SettingsScreen() {
         <Text style={[styles.helperText, { color: theme.textSecondary }]}>{t('La preferencia queda guardada para futuras sesiones.')}</Text>
       </View>
 
-      <Text style={styles.sectionTitle}>{t('Personalización')}</Text>
+      <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('Personalización')}</Text>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <Text style={[styles.rowLabel, { color: theme.text }]}>{t('Color de acento')}</Text>
         <View style={styles.colorRow}>
@@ -80,7 +80,7 @@ export default function SettingsScreen() {
             />
           ))}
         </View>
-        <Text style={[styles.rowLabel, { color: theme.text, marginTop: 2 }]}>{t('Tema')}</Text>
+        <Text style={[styles.rowLabel, { color: theme.text, marginTop: 12 }]}>{t('Tema')}</Text>
         <View style={styles.optionRow}>
           {(['light', 'dark'] as const).map((themeOption) => (
             <Pressable
@@ -100,10 +100,19 @@ export default function SettingsScreen() {
           value={settings.hideBalanceByDefault}
           onValueChange={settings.setHideBalanceByDefault}
           accentColor={settings.accentColor}
+          theme={theme}
+        />
+        <SettingRow
+          label={t('Bloqueo Biométrico')}
+          description={t('Requiere huella o rostro para entrar a la aplicación.')}
+          value={settings.biometricLockEnabled}
+          onValueChange={settings.setBiometricLockEnabled}
+          accentColor={settings.accentColor}
+          theme={theme}
         />
       </View>
 
-      <Text style={styles.sectionTitle}>{t('Avisos y privacidad')}</Text>
+      <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('Avisos y privacidad')}</Text>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <SettingRow
           label={t('Recordatorios')}
@@ -111,19 +120,22 @@ export default function SettingsScreen() {
           value={settings.notificationsEnabled}
           onValueChange={settings.setNotificationsEnabled}
           accentColor={settings.accentColor}
+          theme={theme}
         />
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
         <Pressable style={styles.dangerRow} onPress={confirmDeleteData}>
-          <View style={styles.dangerIcon}><Text>🗑️</Text></View>
-          <View style={styles.rowCopy}>
-            <Text style={styles.dangerLabel}>{t('Borrar todos los datos')}</Text>
-              <Text style={[styles.helperText, { color: theme.textSecondary }]}>{t('Movimientos y bolsillos guardados en este dispositivo.')}</Text>
+          <View style={[styles.dangerIcon, { backgroundColor: theme.surfaceMuted }]}>
+            <Text>🗑️</Text>
           </View>
-          <Text style={styles.chevron}>›</Text>
+          <View style={styles.rowCopy}>
+            <Text style={[styles.dangerLabel, { color: '#EF4444' }]}>{t('Borrar todos los datos')}</Text>
+            <Text style={[styles.helperText, { color: theme.textSecondary }]}>{t('Movimientos y bolsillos guardados en este dispositivo.')}</Text>
+          </View>
+          <Text style={[styles.chevron, { color: theme.textMuted }]}>›</Text>
         </Pressable>
       </View>
 
-      <Text style={styles.version}>{t('Financia Smart Bank · Configuración')}</Text>
+      <Text style={[styles.version, { color: theme.textMuted }]}>{t('Financia Smart Bank · Configuración')}</Text>
     </ScrollView>
   );
 }
@@ -134,18 +146,20 @@ function SettingRow({
   value,
   onValueChange,
   accentColor,
+  theme,
 }: {
   label: string;
   description: string;
   value: boolean;
   onValueChange: (value: boolean) => void;
   accentColor: string;
+  theme: any;
 }) {
   return (
     <View style={styles.settingRow}>
       <View style={styles.rowCopy}>
-        <Text style={styles.rowLabel}>{label}</Text>
-        <Text style={styles.helperText}>{description}</Text>
+        <Text style={[styles.rowLabel, { color: theme.text }]}>{label}</Text>
+        <Text style={[styles.helperText, { color: theme.textSecondary }]}>{description}</Text>
       </View>
       <Switch value={value} onValueChange={onValueChange} trackColor={{ false: '#CBD5E1', true: accentColor }} />
     </View>
@@ -153,31 +167,31 @@ function SettingRow({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#F8FAFC' },
+  screen: { flex: 1 },
   content: { padding: 16, paddingBottom: 36 },
   intro: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
   iconCircle: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   icon: { fontSize: 25 },
   introText: { flex: 1 },
-  heading: { color: '#0F172A', fontSize: 20, fontWeight: '800' },
-  description: { color: '#64748B', fontSize: 13, lineHeight: 19, marginTop: 3 },
-  sectionTitle: { color: '#64748B', fontSize: 12, fontWeight: '800', letterSpacing: 0.7, textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: '#E2E8F0' },
-  rowLabel: { color: '#0F172A', fontSize: 15, fontWeight: '700' },
+  heading: { fontSize: 20, fontWeight: '800' },
+  description: { fontSize: 13, lineHeight: 19, marginTop: 3 },
+  sectionTitle: { fontSize: 12, fontWeight: '800', letterSpacing: 0.7, textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 },
+  card: { borderRadius: 24, padding: 16, marginBottom: 20, borderWidth: 1 },
+  rowLabel: { fontSize: 15, fontWeight: '700' },
   optionRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
-  languageOption: { flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center', backgroundColor: '#F1F5F9' },
-  languageText: { color: '#475569', fontSize: 13, fontWeight: '700' },
+  languageOption: { flex: 1, borderRadius: 12, paddingVertical: 11, alignItems: 'center' },
+  languageText: { fontSize: 13, fontWeight: '700' },
   activeOptionText: { color: '#FFFFFF' },
-  helperText: { color: '#64748B', fontSize: 12, lineHeight: 17, marginTop: 4 },
+  helperText: { fontSize: 12, lineHeight: 17, marginTop: 4 },
   colorRow: { flexDirection: 'row', gap: 14, marginTop: 14, marginBottom: 18 },
   colorButton: { width: 30, height: 30, borderRadius: 15 },
-  selectedColor: { borderWidth: 3, borderColor: '#FFFFFF', shadowColor: '#0F172A', shadowOpacity: 0.35, shadowRadius: 4, elevation: 4 },
-  settingRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  selectedColor: { borderWidth: 3, borderColor: '#FFFFFF', shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 4, elevation: 4 },
+  settingRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16 },
   rowCopy: { flex: 1 },
-  divider: { height: 1, backgroundColor: '#E2E8F0', marginVertical: 16 },
-  dangerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  dangerIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center' },
-  dangerLabel: { color: '#DC2626', fontSize: 15, fontWeight: '700' },
-  chevron: { color: '#94A3B8', fontSize: 25 },
-  version: { color: '#94A3B8', fontSize: 11, textAlign: 'center', marginTop: 2 },
+  divider: { height: 1, marginVertical: 16 },
+  dangerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
+  dangerIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  dangerLabel: { fontSize: 15, fontWeight: '700' },
+  chevron: { fontSize: 25 },
+  version: { fontSize: 11, textAlign: 'center', marginTop: 16 },
 });

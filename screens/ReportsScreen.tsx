@@ -14,6 +14,7 @@ import { PieChart, LineChart } from 'react-native-gifted-charts';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { exportReportAsPdf } from '../utils/generatePdf';
+import { exportTransactionsToCSV } from '../utils/export';
 import { useTransactionStore } from '../store/useTransactionStore';
 import {
   calculateTotalIncome,
@@ -107,21 +108,47 @@ export default function ReportsScreen() {
     }
   };
 
+  const handleExportCSV = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      await exportTransactionsToCSV(transactions);
+    } catch (err) {
+      Alert.alert(t('Error'), t('No se pudo generar el CSV. Inténtalo de nuevo.'));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Pressable
-          accessibilityLabel={t('Exportar PDF')}
-          onPress={handleExport}
-          disabled={isExporting}
-          style={styles.headerExportButton}
-        >
-          {isExporting ? (
-            <ActivityIndicator size="small" color={theme.headerText} />
-          ) : (
-            <MaterialCommunityIcons name="file-pdf-box" size={24} color={theme.headerText} />
-          )}
-        </Pressable>
+        <View style={styles.headerButtons}>
+          <Pressable
+            accessibilityLabel={t('Exportar CSV')}
+            onPress={handleExportCSV}
+            disabled={isExporting}
+            style={styles.headerExportButton}
+          >
+            {isExporting ? (
+              <ActivityIndicator size="small" color={theme.headerText} />
+            ) : (
+              <MaterialCommunityIcons name="file-excel" size={24} color={theme.headerText} />
+            )}
+          </Pressable>
+          <Pressable
+            accessibilityLabel={t('Exportar PDF')}
+            onPress={handleExport}
+            disabled={isExporting}
+            style={styles.headerExportButton}
+          >
+            {isExporting ? (
+              <ActivityIndicator size="small" color={theme.headerText} />
+            ) : (
+              <MaterialCommunityIcons name="file-pdf-box" size={24} color={theme.headerText} />
+            )}
+          </Pressable>
+        </View>
       ),
     });
   }, [navigation, isExporting, startDate, endDate, theme.headerText, t]);
@@ -585,6 +612,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   executiveCard: {
     backgroundColor: '#0F172A',

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Text } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Text, AppState, AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -14,6 +14,7 @@ import SettingsScreen from './screens/SettingsScreen';
 import { useTranslation } from './utils/translations';
 import { useSettingsStore } from './store/useSettingsStore';
 import { getThemeColors } from './utils/theme';
+import BiometricLockOverlay from './components/BiometricLockOverlay';
 
 const Tab = createBottomTabNavigator();
 
@@ -21,15 +22,45 @@ export default function App() {
   const { t } = useTranslation();
   const accentColor = useSettingsStore((state) => state.accentColor);
   const appTheme = useSettingsStore((state) => state.theme);
+  const biometricLockEnabled = useSettingsStore((state) => state.biometricLockEnabled);
   const theme = getThemeColors(appTheme);
+
+  const [isLocked, setIsLocked] = useState(false);
+
+  useEffect(() => {
+    // Bloqueo inicial inmediato si está activado en los ajustes
+    if (biometricLockEnabled) {
+      setIsLocked(true);
+    }
+
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active' && biometricLockEnabled) {
+        setIsLocked(true);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [biometricLockEnabled]);
+
+  const handleAuthenticated = () => {
+    setIsLocked(false);
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
         <SafeAreaProvider>
           <StatusBar style={appTheme === 'dark' ? 'light' : 'dark'} />
+
+          {isLocked && (
+            <BiometricLockOverlay onAuthenticated={handleAuthenticated} />
+          )}
+
           <NavigationContainer>
             <Tab.Navigator
+
               screenOptions={{
                 headerStyle: {
                   backgroundColor: theme.header,

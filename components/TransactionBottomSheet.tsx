@@ -19,10 +19,7 @@ import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
 import { getThemeColors, ThemedText } from '../utils/theme';
 
-interface TransactionBottomSheetProps {
-  bottomSheetRef: React.RefObject<BottomSheetModal | null>;
-  initialType?: TransactionType;
-}
+import { TransactionBottomSheetProps } from '../types/app';
 
 const CATEGORIES = Object.keys(CATEGORY_LABELS) as Category[];
 const Text = ThemedText;

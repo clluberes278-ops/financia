@@ -12,6 +12,7 @@ export interface SettingsState {
   accentColor: string;
   hideBalanceByDefault: boolean;
   notificationsEnabled: boolean;
+  biometricLockEnabled: boolean;
   isLoaded: boolean;
   loadSettings: () => Promise<void>;
   setLanguage: (language: AppLanguage) => Promise<void>;
@@ -19,11 +20,12 @@ export interface SettingsState {
   setAccentColor: (accentColor: string) => Promise<void>;
   setHideBalanceByDefault: (value: boolean) => Promise<void>;
   setNotificationsEnabled: (value: boolean) => Promise<void>;
+  setBiometricLockEnabled: (value: boolean) => Promise<void>;
 }
 
 type StoredSettings = Pick<
   SettingsState,
-  'language' | 'theme' | 'accentColor' | 'hideBalanceByDefault' | 'notificationsEnabled'
+  'language' | 'theme' | 'accentColor' | 'hideBalanceByDefault' | 'notificationsEnabled' | 'biometricLockEnabled'
 >;
 
 const DEFAULT_SETTINGS: StoredSettings = {
@@ -32,6 +34,7 @@ const DEFAULT_SETTINGS: StoredSettings = {
   accentColor: '#4F46E5',
   hideBalanceByDefault: false,
   notificationsEnabled: true,
+  biometricLockEnabled: false,
 };
 
 async function persist(settings: StoredSettings) {
@@ -65,5 +68,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setNotificationsEnabled: async (notificationsEnabled) => {
     set({ notificationsEnabled });
     await persist({ ...get(), notificationsEnabled });
+  },
+  setBiometricLockEnabled: async (biometricLockEnabled) => {
+    set({ biometricLockEnabled });
+    await persist({ ...get(), biometricLockEnabled });
   },
 }));

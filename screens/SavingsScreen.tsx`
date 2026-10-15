@@ -1,0 +1,129 @@
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Modal,
+  TextInput,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from 'react-native';
+import { useSavingsStore } from '../store/useSavingsStore';
+import { useTransactionStore } from '../store/useTransactionStore';
+import { SavingsPocket } from '../types/savings';
+import { formatCurrency, calculateBalance } from '../utils/calculations';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { useTranslation } from '../utils/translations';
+import { getThemeColors, ThemedText } from '../utils/theme';
+
+const POPULAR_EMOJIS = ['📱', '🚗', '🛡️', '🏖️', '💻', '🏠', '🎓', '🎁', '🎮', '🐖'];
+const QUICK_AMOUNTS = [500, 1000, 2000, 5000];
+const Text = ThemedText;
+
+export default function SavingsScreen() {
+  const { pockets, isLoaded, loadPockets, createPocket, depositToPocket, withdrawFromPocket, deletePocket } =
+    useSavingsStore();
+  const { transactions, addTransaction } = useTransactionStore();
+  const accentColor = useSettingsStore((state) => state.accentColor);
+  const appTheme = useSettingsStore((state) => state.theme);
+  const theme = getThemeColors(appTheme);
+  const { t } = useTranslation();
+
+  const mainBalance = calculateBalance(transactions);
+
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [newPocketName, setNewPocketName] = useState('');
+  const [newPocketTarget, setNewPocketTarget] = useState('');
+  const [selectedEmoji, setSelectedEmoji] = useState('📱');
+
+  const [actionModalVisible, setActionModalVisible] = useState(false);
+  const [selectedPocket, setSelectedPocket] = useState<SavingsPocket | null>(null);
+  const [actionType, setActionType] = useState<'abonar' | 'retirar'>('abonar');
+  const [actionAmount, setActionAmount] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
+
+  useEffect(() => {
+    if (!isLoaded) loadPockets();
+  }, [isLoaded]);
+
+  const totalSaved = pockets.reduce((acc, p) => acc + p.currentAmount, 0);
+  const totalTarget = pockets.reduce((acc, p) => acc + p.targetAmount, 0);
+  const globalProgress = totalTarget > 0 ? Math.min(100, Math.round((totalSaved / totalTarget) * 100)) : 0;
+
+  const handleCreatePocket = async () => {
+    const target = parseFloat(newPocketTarget.replace(',', '.'));
+    if (!newPocketName.trim()) {
+      Alert.alert('Falta información', 'Por favor ingresa un nombre para la meta o bolsillo.');
+      return;
+    }
+    if (isNaN(target) || target <= 0) {
+      Alert.alert('Monto inválido', 'Por favor ingresa una meta fija válida en pesos.');
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      await createPocket({
+        name: newPocketName.trim(),
+        targetAmount: target,
+        emoji: selectedEmoji,
+      });
+
+      Keyboard.dismiss();
+      setNewPocketName('');
+      setNewPocketTarget('');
+      setSelectedEmoji('📱');
+      setCreateModalVisible(false);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleOpenActionModal = (pocket: SavingsPocket, type: 'abonar' | 'retirar') => {
+    setSelectedPocket(pocket);
+    setActionType(type);
+    setActionAmount('');
+    setActionModalVisible(true);
+  };
+
+  const handleConfirmAction = async () => {
+    if (!selectedPocket) return;
+    const amount = parseFloat(actionAmount.replace(',', '.'));
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert('Monto inválido', 'Ingresa un monto válido.');
+      return;
+    }
+
+    setIsProcessingAction(true);
+
+    try {
+      if (actionType === 'abonar') {
+        if (amount > mainBalance) {
+          Alert.alert(
+            'Saldo insuficiente',
+            `No tienes suficiente saldo disponible en tu cuenta principal (${formatCurrency(mainBalance)}) para abonar ${formatCurrency(amount)}.`
+          );
+          return;
+        }
+
+        await depositToPocket(selectedPocket.id, amount);
+        await addTransaction({
+          amount,
+          type: 'gasto',
+          category: 'ahorro',
+          date: new Date().toISOString(),
+          note: `Abono a bolsillo: ${selectedPocket.name}`,
+        });
+
+        const newAmount = selectedPocket.currentAmount + amount;
+        if (newAmount >= selectedPocket.targetAmount) {
+          Alert.alert('🏆 ¡Meta Cumplida!', `¡Felicidades! Has completado tu meta para "${selectedPocket.name}".`);
+        } else if (newAmount >= selectedPocket.targetAmount * 0.8) {
+          Alert.alert('🔔 ¡A punto de llegar!', `Estás a un paso de alcanzar tu meta para "${selectedPocket.//Slightly modified for compatibility
+          //CORTADO POR EL SYSTEM_REMINDER...
