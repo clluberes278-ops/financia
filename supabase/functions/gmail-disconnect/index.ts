@@ -13,22 +13,26 @@ Deno.serve(async (request: Request) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? Deno.env.get('SUPABASE_PUBLISHABLE_KEY');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const encryptionKey = Deno.env.get('GMAIL_REFRESH_TOKEN_KEY');
     const authorization = request.headers.get('authorization');
-    if (!supabaseUrl || !anonKey || !serviceRoleKey || !encryptionKey || !authorization) throw new Error('Gmail service is not configured.');
-
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { authorization } },
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: userData, error: userError } = await userClient.auth.getUser();
-    if (userError || !userData.user) return Response.json({ error: 'Authentication required.' }, { status: 401, headers: corsHeaders });
+    if (!supabaseUrl || !serviceRoleKey || !encryptionKey) throw new Error('Gmail service is not configured.');
+    const accessToken = /^Bearer\s+(.+)$/i.exec(authorization ?? '')?.[1];
+    if (!accessToken) {
+      return Response.json({ error: 'Authentication required.' }, { status: 401, headers: corsHeaders });
+    }
 
     const admin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+    const { data: userData, error: userError } = await admin.auth.getUser(accessToken);
+    if (userError || !userData.user) {
+      console.error('Gmail disconnect user validation failed:', userError?.message ?? 'User not found.');
+      return Response.json(
+        { error: userError?.message ?? 'Authentication required.' },
+        { status: 401, headers: corsHeaders }
+      );
+    }
     const { data: connection, error: readError } = await admin
       .from('gmail_connection_secrets')
       .select('encrypted_refresh_token')

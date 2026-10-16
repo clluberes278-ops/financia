@@ -15,7 +15,7 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "single",
       "name": "Financia Smart Bank",
       "shortName": "Financia",
       "description": "Tus finanzas personales inteligentes",

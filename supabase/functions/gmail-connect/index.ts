@@ -14,32 +14,37 @@ Deno.serve(async (request: Request) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? Deno.env.get('SUPABASE_PUBLISHABLE_KEY');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const encryptionKey = Deno.env.get('GMAIL_REFRESH_TOKEN_KEY');
     const authorization = request.headers.get('authorization');
-    if (!supabaseUrl || !anonKey || !serviceRoleKey || !encryptionKey || !authorization) {
+    if (!supabaseUrl || !serviceRoleKey || !encryptionKey) {
       throw new Error('Gmail connection service is not configured.');
     }
+    const supabaseAccessToken = /^Bearer\s+(.+)$/i.exec(authorization ?? '')?.[1];
+    if (!supabaseAccessToken) {
+      return Response.json({ error: 'Authentication required.' }, { status: 401, headers: corsHeaders });
+    }
 
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { authorization } },
+    const admin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data: userData, error: userError } = await userClient.auth.getUser();
-    if (userError || !userData.user) return Response.json({ error: 'Authentication required.' }, { status: 401, headers: corsHeaders });
+    const { data: userData, error: userError } = await admin.auth.getUser(supabaseAccessToken);
+    if (userError || !userData.user) {
+      console.error('Gmail connect user validation failed:', userError?.message ?? 'User not found.');
+      return Response.json(
+        { error: userError?.message ?? 'Authentication required.' },
+        { status: 401, headers: corsHeaders }
+      );
+    }
 
     const body = (await request.json()) as { refreshToken?: string };
     if (!body.refreshToken || body.refreshToken.length > 8192) {
       return Response.json({ error: 'A valid Google refresh token is required.' }, { status: 400, headers: corsHeaders });
     }
 
-    const accessToken = await refreshGoogleAccessToken(body.refreshToken);
-    const gmailEmail = await getGmailAddress(accessToken);
+    const gmailAccessToken = await refreshGoogleAccessToken(body.refreshToken);
+    const gmailEmail = await getGmailAddress(gmailAccessToken);
     const encryptedRefreshToken = await encryptSecret(body.refreshToken, encryptionKey);
-    const admin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
 
     const { error: statusError } = await admin.from('gmail_connection_status').upsert({
       user_id: userData.user.id,

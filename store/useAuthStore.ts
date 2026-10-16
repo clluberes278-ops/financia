@@ -34,11 +34,28 @@ interface AuthState {
 
 let authSubscription: Subscription | null = null;
 
+interface HttpResponseContext {
+  status: number;
+  text: () => Promise<string>;
+  clone?: () => HttpResponseContext;
+}
+
+function isHttpResponseContext(value: unknown): value is HttpResponseContext {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'status' in value &&
+    typeof value.status === 'number' &&
+    'text' in value &&
+    typeof value.text === 'function'
+  );
+}
+
 async function getGmailConnectError(error: FunctionsHttpError): Promise<Error> {
   const response: unknown = error.context;
-  if (!(response instanceof Response)) return new Error(error.message);
+  if (!isHttpResponseContext(response)) return new Error(error.message);
 
-  const responseBody = await response.clone().text();
+  const responseBody = await (response.clone?.() ?? response).text();
   try {
     const payload: unknown = JSON.parse(responseBody);
     if (

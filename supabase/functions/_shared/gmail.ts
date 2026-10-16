@@ -22,6 +22,14 @@ interface GmailMessage {
   payload?: GmailPart & { headers?: GmailHeader[] };
 }
 
+interface GoogleApiErrorResponse {
+  error?: {
+    message?: string;
+    status?: string;
+    errors?: Array<{ reason?: string }>;
+  };
+}
+
 export interface GmailNotice {
   id: string;
   sender: string;
@@ -101,7 +109,25 @@ async function gmailRequest<T>(accessToken: string, path: string): Promise<T> {
     headers: { authorization: `Bearer ${accessToken}` },
   });
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) throw new Error('Gmail authorization is no longer valid.');
+    if (response.status === 401 || response.status === 403) {
+      const result = (await response.json().catch(() => null)) as GoogleApiErrorResponse | null;
+      const reason = result?.error?.errors?.[0]?.reason;
+      const message = result?.error?.message;
+      if (response.status === 401) {
+        throw new Error('Google rejected the Gmail access token. Reconnect Gmail and grant read-only Gmail access.');
+      }
+      if (reason === 'insufficientPermissions') {
+        throw new Error('Google denied Gmail read access. Reconnect Gmail and grant the gmail.readonly permission.');
+      }
+      if (reason === 'accessNotConfigured' || /has not been used|is disabled/i.test(message ?? '')) {
+        throw new Error('The Gmail API is not enabled for the Google Cloud project used by this OAuth app.');
+      }
+      throw new Error(
+        message
+          ? `Google denied the Gmail API request (${response.status}): ${message}`
+          : `Google denied the Gmail API request (${response.status}). Check Gmail API access and the gmail.readonly permission.`
+      );
+    }
     throw new Error(`Gmail API request failed (${response.status}).`);
   }
   return (await response.json()) as T;
