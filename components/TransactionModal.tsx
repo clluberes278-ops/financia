@@ -13,7 +13,7 @@ import {
   Keyboard,
 } from 'react-native';
 import { Category, CATEGORY_LABELS, TransactionType } from '../types/transaction';
-import { LinearGradient } from 'expo-linear-gradient';
+import GradientView from './GradientView';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
@@ -266,7 +266,7 @@ export default function TransactionModal({
                 onPress={handleSubmit}
                 disabled={isSubmitting}
               >
-                <LinearGradient
+                <GradientView
                   colors={type === 'ingreso' ? [theme.income, '#00B894'] : [accentColor, theme.heroEnd]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
@@ -275,7 +275,7 @@ export default function TransactionModal({
                   <Text style={styles.saveButtonText}>
                     {isSubmitting ? 'Guardando...' : type === 'ingreso' ? t('Guardar Ingreso') : t('Guardar Gasto')}
                   </Text>
-                </LinearGradient>
+                </GradientView>
               </Pressable>
             </View>
           </KeyboardAvoidingView>

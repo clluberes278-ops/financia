@@ -19,7 +19,7 @@ import { formatCurrency, calculateBalance } from '../utils/calculations';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
 import { getShadowStyle, getThemeColors, ThemedText } from '../utils/theme';
-import { LinearGradient } from 'expo-linear-gradient';
+import GradientView from '../components/GradientView';
 
 const POPULAR_EMOJIS = ['📱', '🚗', '🛡️', '🏖️', '💻', '🏠', '🎓', '🎁', '🎮', '🐖'];
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000];
@@ -176,7 +176,7 @@ export default function SavingsScreen() {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <LinearGradient
+        <GradientView
           colors={[theme.heroStart, theme.heroEnd]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0.9 }}
@@ -199,7 +199,7 @@ export default function SavingsScreen() {
                 <Text style={styles.summaryPercentText}>{globalProgress}%</Text>
               </View>
               <View style={styles.summaryBarBg}>
-                <LinearGradient colors={['#FDE68A', '#FFFFFF']} style={[styles.summaryBarFill, { width: `${globalProgress}%` }]} />
+                <GradientView colors={['#FDE68A', '#FFFFFF']} style={[styles.summaryBarFill, { width: `${globalProgress}%` }]} />
               </View>
             </View>
           )}
@@ -210,7 +210,7 @@ export default function SavingsScreen() {
           >
             <Text style={styles.newPocketPrimaryBtnText}>＋ {t('Crear Nuevo Bolsillo de Ahorro')}</Text>
           </Pressable>
-        </LinearGradient>
+        </GradientView>
 
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('Tus Cuentas de Ahorro')}</Text>

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { PieChart, LineChart } from 'react-native-gifted-charts';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import GradientView from '../components/GradientView';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { exportReportAsPdf } from '../utils/generatePdf';
@@ -28,7 +28,7 @@ import {
   getMonthlyTrend,
 } from '../utils/calculations';
 import { CATEGORY_LABELS, Category } from '../types/transaction';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DatePicker from '../components/DatePicker';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
 import { getShadowStyle, getThemeColors, ThemedText } from '../utils/theme';
@@ -224,11 +224,9 @@ export default function ReportsScreen() {
         </View>
 
         {datePickerTarget && (
-          <DateTimePicker
+          <DatePicker
             value={datePickerTarget === 'start' ? startDate : endDate}
             mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            themeVariant={appTheme}
             onChange={(_, date) => {
               const target = datePickerTarget;
               setDatePickerTarget(null);
@@ -245,7 +243,7 @@ export default function ReportsScreen() {
         )}
 
         {/* Resumen Ejecutivo del Mes */}
-        <LinearGradient
+        <GradientView
           colors={[theme.heroStart, theme.heroEnd]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0.9 }}
@@ -317,7 +315,7 @@ export default function ReportsScreen() {
               </View>
             </View>
           )}
-        </LinearGradient>
+        </GradientView>
 
         {/* Indicadores Clave (KPIs) */}
         <Text style={styles.sectionTitle}>{t('Métricas Inteligentes')}</Text>

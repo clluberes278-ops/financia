@@ -1,5 +1,5 @@
+import { Platform } from 'react-native';
 import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
 import { Transaction, CATEGORY_LABELS } from '../types/transaction';
 import {
   calculateTotalIncome,
@@ -235,6 +235,16 @@ export async function exportReportAsPdf(
 </body>
 </html>`;
 
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const win = window.open('', '_blank', 'noopener,noreferrer');
+    if (!win) throw new Error('No se pudo abrir la vista de impresión.');
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    win.print();
+    return;
+  }
+
   const { uri } = await Print.printToFileAsync({
     html,
     width: 360,
@@ -244,14 +254,19 @@ export async function exportReportAsPdf(
     base64: false,
   });
 
-  const isAvailable = await Sharing.isAvailableAsync();
-  if (isAvailable) {
-    await Sharing.shareAsync(uri, {
+  if (typeof navigator !== 'undefined' && navigator.userAgent.includes('Expo')) {
+    await Print.printAsync({ uri });
+    return;
+  }
+
+  const sharing = await import('expo-sharing');
+  if (await sharing.isAvailableAsync()) {
+    await sharing.shareAsync(uri, {
       mimeType: 'application/pdf',
       dialogTitle: `Informe Financia - ${monthLabel}`,
       UTI: 'com.adobe.pdf',
     });
   } else {
-    await Print.printAsync({ uri });
+    await Print.printAsync({ html });
   }
 }

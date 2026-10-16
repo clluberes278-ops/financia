@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import GradientView from '../components/GradientView';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useTransactionStore } from '../store/useTransactionStore';
@@ -69,7 +69,7 @@ export default function DashboardScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingHorizontal: width < 360 ? 14 : 20 }]}
       >
         {/* --- MAIN BALANCE CARD --- */}
-        <LinearGradient
+        <GradientView
           colors={[theme.heroStart, theme.heroEnd]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -106,7 +106,7 @@ export default function DashboardScreen() {
               </View>
             </View>
           </View>
-        </LinearGradient>
+        </GradientView>
 
         {/* --- RECENT TRANSACTIONS --- */}
         <View style={styles.sectionHeader}>
@@ -152,10 +152,10 @@ export default function DashboardScreen() {
         activeOpacity={0.85}
         style={[styles.fab, getShadowStyle({ color: accentColor, offsetX: 0, offsetY: 4, opacity: 0.32, radius: 14, elevation: 8 })]}
       >
-        <LinearGradient colors={[accentColor, theme.heroEnd]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.fabGradient}>
+        <GradientView colors={[accentColor, theme.heroEnd]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.fabGradient}>
           <MaterialCommunityIcons name="plus" size={25} color="#FFFFFF" />
           <Text style={styles.fabText}>{t('Añadir')}</Text>
-        </LinearGradient>
+        </GradientView>
       </TouchableOpacity>
     </View>
   );

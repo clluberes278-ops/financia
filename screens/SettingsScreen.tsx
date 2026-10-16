@@ -6,7 +6,7 @@ import { useSettingsStore } from '../store/useSettingsStore';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { useTranslation } from '../utils/translations';
 import { CARD_COLOR_PALETTES, getFontFamily, getShadowStyle, getThemeColors, ThemedText, type AppThemeColors } from '../utils/theme';
-import { LinearGradient } from 'expo-linear-gradient';
+import GradientView from '../components/GradientView';
 import type { AppFontFamily } from '../store/useSettingsStore';
 import type { CardColor } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -75,7 +75,7 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <LinearGradient
+      <GradientView
         colors={[theme.heroStart, theme.heroEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -86,7 +86,7 @@ export default function SettingsScreen() {
           <Text style={styles.heading}>{t('Tu espacio, tus reglas')}</Text>
           <Text style={styles.description}>{t('Personaliza Financia para que se adapte a tu forma de organizar el dinero.')}</Text>
         </View>
-      </LinearGradient>
+      </GradientView>
 
       <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('General')}</Text>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>

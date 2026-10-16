@@ -13,6 +13,16 @@
     "android": {
       "package": "com.kal.financia"
     },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "name": "Financia Smart Bank",
+      "shortName": "Financia",
+      "description": "Tus finanzas personales inteligentes",
+      "themeColor": "#6D28D9",
+      "backgroundColor": "#0F0A1E",
+      "favicon": "./assets/favicon.png"
+    },
     "plugins": [
       "expo-sharing",
       "@react-native-community/datetimepicker",

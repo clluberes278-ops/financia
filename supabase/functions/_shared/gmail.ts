@@ -113,11 +113,22 @@ export async function getGmailAddress(accessToken: string): Promise<string> {
   return profile.emailAddress;
 }
 
-export async function listBhdNotices(
+const BANK_ALERT_SENDERS = [
+  'alertas@bhd.com.do',
+  'notificaciones@bhd.com.do',
+  'notificaciones@scotiabank.com.do',
+  'alertas@scotiabank.com.do',
+  'noreply@banreservas.com.do',
+  'alertas@banreservas.com.do',
+  'notificaciones@bpd.com.do',
+  'alertas@bpd.com.do',
+];
+
+export async function listBankNotices(
   accessToken: string,
   afterUnixSeconds: number
 ): Promise<GmailNotice[]> {
-  const query = `after:${afterUnixSeconds} {from:alertas@bhd.com.do from:notificaciones@bhd.com.do}`;
+  const query = `after:${afterUnixSeconds} (${BANK_ALERT_SENDERS.map((sender) => `from:${sender}`).join(' OR ')})`;
   const notices: GmailNotice[] = [];
   let pageToken: string | undefined;
   let pageCount = 0;
@@ -164,4 +175,11 @@ export async function listBhdNotices(
   } while (pageToken);
 
   return notices;
+}
+
+export async function listBhdNotices(
+  accessToken: string,
+  afterUnixSeconds: number
+): Promise<GmailNotice[]> {
+  return listBankNotices(accessToken, afterUnixSeconds);
 }

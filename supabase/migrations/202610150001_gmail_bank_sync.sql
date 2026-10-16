@@ -30,10 +30,10 @@ create policy "Users can read their Gmail connection status"
 create table if not exists public.bank_email_transactions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
-  bank text not null check (bank = 'bhd'),
+  bank text not null check (length(trim(bank)) > 0),
   gmail_message_id text not null,
   amount numeric(14, 2) not null check (amount > 0),
-  currency text not null check (currency = 'DOP'),
+  currency text not null check (currency in ('DOP', 'USD')),
   type text not null check (type in ('ingreso', 'gasto')),
   category text not null check (category in ('comida', 'transporte', 'entretenimiento', 'servicios', 'salud', 'educacion', 'salario', 'ahorro', 'otros')),
   occurred_at timestamptz not null,

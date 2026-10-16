@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, View, TextInput, Pressable, StyleSheet, ScrollView, Keyboard } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import GradientView from './GradientView';
 import { Category, CATEGORY_LABELS, TransactionType } from '../types/transaction';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -161,9 +161,9 @@ export default function TransactionForm({ onDone }: { onDone?: () => void }) {
       </View>
 
       <Pressable style={[styles.submitButton, isSubmitting && styles.disabledButton]} onPress={handleSubmit} disabled={isSubmitting}>
-        <LinearGradient colors={[accentColor, theme.heroEnd]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.submitGradient}>
+        <GradientView colors={[accentColor, theme.heroEnd]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.submitGradient}>
           <Text style={styles.submitText}>{isSubmitting ? 'Guardando...' : 'Guardar'}</Text>
-        </LinearGradient>
+        </GradientView>
       </Pressable>
     </View>
   );

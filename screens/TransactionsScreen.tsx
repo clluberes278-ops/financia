@@ -6,14 +6,16 @@ import {
   FlatList,
   Pressable,
   Alert,
+  Platform,
 } from 'react-native';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import GradientView from '../components/GradientView';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { CATEGORY_LABELS, TransactionType } from '../types/transaction';
 import { formatCurrency, formatDate } from '../utils/calculations';
 import TransactionBottomSheet from '../components/TransactionBottomSheet';
+import TransactionModal from '../components/TransactionModal';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
 import { getShadowStyle, getThemeColors, ThemedText } from '../utils/theme';
@@ -30,12 +32,17 @@ export default function TransactionsScreen() {
   const theme = getThemeColors(appTheme, cardColor);
   const { t } = useTranslation();
 
-  const bottomSheetRef = React.useRef<BottomSheetModal>(null);
+  const bottomSheetRef = React.useRef<BottomSheetModal | null>(null);
   const [modalType, setModalType] = useState<TransactionType>('gasto');
   const [filter, setFilter] = useState<FilterType>('todos');
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const handleOpenModal = (type: TransactionType = 'gasto') => {
     setModalType(type);
+    if (Platform.OS === 'web') {
+      setIsModalVisible(true);
+      return;
+    }
     bottomSheetRef.current?.present();
   };
 
@@ -122,7 +129,7 @@ export default function TransactionsScreen() {
         </View>
       </View>
 
-      <LinearGradient
+      <GradientView
         colors={[theme.heroStart, theme.heroEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0.8 }}
@@ -137,7 +144,7 @@ export default function TransactionsScreen() {
         <View style={styles.totalIcon}>
           <MaterialCommunityIcons name="swap-vertical" size={22} color="#FFFFFF" />
         </View>
-      </LinearGradient>
+      </GradientView>
 
       {/* Selector de Filtros */}
       <View style={styles.filterRow}>
@@ -286,15 +293,19 @@ export default function TransactionsScreen() {
         style={({ pressed }) => [styles.fabButton, getShadowStyle({ color: accentColor, offsetX: 0, offsetY: 6, opacity: 0.3, radius: 14, elevation: 8 }), pressed && styles.fabPressed]}
         onPress={() => handleOpenModal('gasto')}
       >
-        <LinearGradient colors={[accentColor, theme.heroEnd]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fabGradient}>
+        <GradientView colors={[accentColor, theme.heroEnd]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fabGradient}>
           <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
-        </LinearGradient>
+        </GradientView>
       </Pressable>
 
-      <TransactionBottomSheet
-        bottomSheetRef={bottomSheetRef}
-        initialType={modalType}
-      />
+      {Platform.OS === 'web' ? (
+        <TransactionModal visible={isModalVisible} initialType={modalType} onClose={() => setIsModalVisible(false)} />
+      ) : (
+        <TransactionBottomSheet
+          bottomSheetRef={bottomSheetRef}
+          initialType={modalType}
+        />
+      )}
     </View>
   );
 }

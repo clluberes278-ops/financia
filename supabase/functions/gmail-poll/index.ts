@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { decryptSecret } from '../_shared/crypto.ts';
-import { getGmailAddress, listBhdNotices, refreshGoogleAccessToken } from '../_shared/gmail.ts';
-import { parseBhdEmail } from '../_shared/bhdEmailParser.ts';
+import { getGmailAddress, listBankNotices, refreshGoogleAccessToken } from '../_shared/gmail.ts';
+import { parseGenericBankEmail } from '../_shared/genericBankEmailParser.ts';
 
 interface GmailConnectionSecret {
   user_id: string;
@@ -58,9 +58,9 @@ Deno.serve(async (request: Request) => {
       const lastSynced = currentStatus?.last_synced_at ?? new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
       const overlapSeconds = currentStatus?.initial_backfill_complete ? 48 * 60 * 60 : 0;
       const after = Math.floor(new Date(lastSynced).getTime() / 1000) - overlapSeconds;
-      const notices = await listBhdNotices(accessToken, after);
+      const notices = await listBankNotices(accessToken, after);
       const transactions = notices
-        .map((notice) => parseBhdEmail({
+        .map((notice) => parseGenericBankEmail({
           gmailMessageId: notice.id,
           sender: notice.sender,
           subject: notice.subject,
@@ -72,7 +72,7 @@ Deno.serve(async (request: Request) => {
         const { data: savedTransactions, error } = await admin.from('bank_email_transactions').upsert(
           transactions.map((transaction) => ({
             user_id: connection.user_id,
-            bank: 'bhd',
+            bank: transaction.bank,
             gmail_message_id: transaction.gmailMessageId,
             amount: transaction.amount,
             currency: transaction.currency,

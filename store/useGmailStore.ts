@@ -10,6 +10,7 @@ interface GmailConnection {
 }
 
 interface BankEmailTransaction {
+  bank?: string;
   gmail_message_id: string;
   amount: number;
   type: TransactionType;
@@ -64,12 +65,12 @@ export const useGmailStore = create<GmailState>((set) => ({
       }
       const { data, error } = await supabase
         .from('bank_email_transactions')
-        .select('gmail_message_id, amount, type, category, occurred_at, note')
+        .select('bank, gmail_message_id, amount, type, category, occurred_at, note')
         .order('occurred_at', { ascending: false });
       if (error) throw error;
 
       const imported: Transaction[] = ((data ?? []) as BankEmailTransaction[]).map((transaction) => ({
-        id: `gmail:bhd:${transaction.gmail_message_id}`,
+        id: `gmail:${transaction.bank ?? 'bhd'}:${transaction.gmail_message_id}`,
         amount: Number(transaction.amount),
         type: transaction.type,
         category: transaction.category,

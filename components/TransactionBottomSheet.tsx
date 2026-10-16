@@ -11,14 +11,13 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import {
-  BottomSheetModal,
-  BottomSheetView,
-  BottomSheetBackdrop,
-  type BottomSheetBackdropProps,
-} from '@gorhom/bottom-sheet';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import GradientView from './GradientView';
+
+const bottomSheetModule = Platform.OS === 'web' ? null : require('@gorhom/bottom-sheet');
+const BottomSheetModal = bottomSheetModule?.BottomSheetModal ?? null;
+const BottomSheetView = bottomSheetModule?.BottomSheetView ?? View;
+const BottomSheetBackdrop = bottomSheetModule?.BottomSheetBackdrop ?? View;
 import { Category, CATEGORY_LABELS, TransactionType } from '../types/transaction';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -55,6 +54,8 @@ export default function TransactionBottomSheet({
     setCategory(initialType === 'ingreso' ? 'salario' : 'comida');
   }, [initialType]);
 
+  if (Platform.OS === 'web') return null;
+
   const handleSubmit = async () => {
     const numericAmount = parseFloat(amount.replace(',', '.'));
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
@@ -86,7 +87,7 @@ export default function TransactionBottomSheet({
   };
 
   const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
+    (props: any) => (
       <BottomSheetBackdrop
         {...props}
         disappearsOnIndex={-1}
@@ -221,9 +222,9 @@ export default function TransactionBottomSheet({
             onPress={handleSubmit}
             disabled={isSubmitting}
           >
-            <LinearGradient colors={[accentColor, theme.heroEnd]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.submitGradient}>
+            <GradientView colors={[accentColor, theme.heroEnd]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.submitGradient}>
               <Text style={styles.submitText}>{isSubmitting ? 'Guardando...' : 'Guardar'}</Text>
-            </LinearGradient>
+            </GradientView>
           </Pressable>
         </KeyboardAvoidingView>
         </BottomSheetView>

@@ -59,9 +59,9 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
   },
 
   deleteTransaction: async (id) => {
-    const messageIdPrefix = 'gmail:bhd:';
-    if (id.startsWith(messageIdPrefix) && supabase) {
-      const gmailMessageId = id.slice(messageIdPrefix.length);
+    const importedMatch = /^gmail:(?:.+):(.+)$/.exec(id);
+    if (importedMatch && supabase) {
+      const gmailMessageId = importedMatch[1];
       const { error } = await supabase
         .from('bank_email_transactions')
         .update({ is_hidden: true })
@@ -76,8 +76,8 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
 
   clearAllTransactions: async () => {
     const importedMessageIds = get().transactions
-      .filter((transaction) => transaction.id.startsWith('gmail:bhd:'))
-      .map((transaction) => transaction.id.slice('gmail:bhd:'.length));
+      .filter((transaction) => /^gmail:/.test(transaction.id))
+      .map((transaction) => transaction.id.replace(/^gmail:[^:]+:/, ''));
     if (supabase && importedMessageIds.length > 0) {
       const { error } = await supabase
         .from('bank_email_transactions')

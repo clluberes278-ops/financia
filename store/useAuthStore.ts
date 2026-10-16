@@ -1,13 +1,20 @@
 import { create } from 'zustand';
-import { makeRedirectUri } from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
+
+const makeRedirectUri = Platform.OS === 'web'
+  ? undefined
+  : (require('expo-auth-session') as typeof import('expo-auth-session')).makeRedirectUri;
+const WebBrowser = Platform.OS === 'web'
+  ? null
+  : (require('expo-web-browser') as typeof import('expo-web-browser'));
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FunctionsHttpError, type Session, type Subscription } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from '../utils/supabase';
 import { useGmailStore } from './useGmailStore';
 
-WebBrowser.maybeCompleteAuthSession();
+if (WebBrowser && typeof WebBrowser.maybeCompleteAuthSession === 'function') {
+  WebBrowser.maybeCompleteAuthSession();
+}
 const GMAIL_CONNECT_PENDING_KEY = '@financia_gmail_connect_pending';
 
 export type AuthProvider = 'google' | 'apple';
@@ -132,7 +139,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       const redirectTo =
         Platform.OS === 'web' && typeof window !== 'undefined'
           ? window.location.origin
-          : makeRedirectUri({ scheme: 'financia', path: 'auth/callback' });
+          : makeRedirectUri
+            ? makeRedirectUri({ scheme: 'financia', path: 'auth/callback' })
+            : 'financia://auth/callback';
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -142,7 +151,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
       if (error) throw error;
 
-      if (Platform.OS !== 'web') {
+      if (Platform.OS !== 'web' && WebBrowser) {
         if (!data.url) throw new Error('Supabase no devolvió la URL de autenticación.');
 
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
@@ -177,7 +186,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       const redirectTo =
         Platform.OS === 'web' && typeof window !== 'undefined'
           ? window.location.origin
-          : makeRedirectUri({ scheme: 'financia', path: 'auth/callback' });
+          : makeRedirectUri
+            ? makeRedirectUri({ scheme: 'financia', path: 'auth/callback' })
+            : 'financia://auth/callback';
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -197,6 +208,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
+      if (!WebBrowser) return;
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
       if (result.type !== 'success') return;
 

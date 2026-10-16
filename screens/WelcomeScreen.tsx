@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import GradientView from '../components/GradientView';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/useAuthStore';
@@ -30,7 +30,7 @@ export default function WelcomeScreen({ onContinueWithoutAccount }: WelcomeScree
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        <LinearGradient
+        <GradientView
           colors={[theme.heroStart, theme.heroEnd]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -41,7 +41,7 @@ export default function WelcomeScreen({ onContinueWithoutAccount }: WelcomeScree
           </View>
           <ThemedText style={styles.brand}>{t('Financia Smart Bank')}</ThemedText>
           <ThemedText style={styles.tagline}>{t('Organiza tu dinero, a tu manera.')}</ThemedText>
-        </LinearGradient>
+        </GradientView>
 
         <View style={styles.content}>
           <ThemedText style={[styles.heading, { color: theme.text }]}>{t('Bienvenido')}</ThemedText>
