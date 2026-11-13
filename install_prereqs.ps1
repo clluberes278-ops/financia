@@ -1,27 +1,9 @@
-$ErrorActionPreference = 'Stop'
-
-# Ejecuta con privilegios temporales de bypass de política de ejecución
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force | Out-Null
-
-# 1. Instalar Node.js mediante winget (si no está ya instalado)
-if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    Write-Host "Instalando Node.js vía winget..."
-    winget install --id OpenJS.NodeJS -e --source winget
-} else {
-    Write-Host "Node.js ya está instalado: $(node -v)"
+﻿# Comprobación de requisitos; no instala herramientas globales.
+$ErrorActionPreference = 'Continue'
+foreach ($tool in @('node', 'npm.cmd', 'java', 'dotnet', 'adb')) {
+    if (Get-Command $tool -ErrorAction SilentlyContinue) { Write-Host "Disponible: $tool" }
+    else { Write-Warning "Falta en PATH: $tool" }
 }
-
-# 2. Verificar que npm está disponible (viene con Node)
-if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
-    Write-Error "npm no está disponible después de la instalación de Node. Abortando."
-    exit 1
-}
-
-# 3. Instalar expo-cli y eas-cli globalmente mediante npm
-Write-Host "Instalando expo-cli y eas-cli globalmente..."
-npm i -g expo-cli
-npm i -g eas-cli
-
-# 4. Mostrar versiones instaladas
-Write-Host "Versión de expo-cli: $(expo --version)"
-Write-Host "Versión de eas-cli: $(eas --version)"
+Write-Host 'Android requiere JDK 17 y Android Studio/SDK. iOS requiere macOS/Xcode.'
+Write-Host 'Backend: SDK .NET 10. npm run api:start también detecta artifacts/dotnet.'
+Write-Host 'Consulta README.md; no se necesita ninguna CLI global.'

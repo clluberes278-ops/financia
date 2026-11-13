@@ -1,6 +1,16 @@
 import { useSettingsStore } from '../store/useSettingsStore';
 
 const dictionary = {
+  'Saldo disponible': 'Available balance',
+  'Guardar copia del historial anterior': 'Save a copy of previous history',
+  'Pesos dominicanos': 'Dominican pesos',
+  'Dólares estadounidenses': 'US dollars',
+  'Saldos separados por moneda, sin conversiones.': 'Separate balances by currency, without conversion.',
+  'Meta fija': 'Target amount',
+  'Transferencia de ahorro': 'Savings transfer',
+  'Historial anterior conservado': 'Previous history preserved',
+  'Los datos anteriores no tenían propietario. Se conservan intactos, separados de este espacio, hasta que decidas a quién pertenecen. Borrar este espacio no borra ese historial.': 'Previous data had no owner. It is preserved separately until you decide who it belongs to. Clearing this space does not delete that history.',
+  'Reintentar': 'Retry',
   'Financia Smart Bank': 'Financia Smart Bank',
   Inicio: 'Home',
   Movimientos: 'Transactions',
@@ -26,7 +36,6 @@ const dictionary = {
   Cancelar: 'Cancel',
   'Restablecer historial': 'Reset history',
   'Borrar todo': 'Delete all',
-  'Saldo disponible': 'Available balance',
   'Total apartado en bolsillos': 'Total saved in pockets',
   'Salud Financiera': 'Financial health',
   'Tasa ahorro': 'Savings rate',

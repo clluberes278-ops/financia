@@ -1,3 +1,5 @@
+export type Currency = 'DOP' | 'USD';
+
 export type TransactionType = 'ingreso' | 'gasto';
 
 export type Category =
@@ -13,6 +15,8 @@ export type Category =
 
 export interface Transaction {
   id: string;
+  currency: Currency;
+  pocketId?: string; // Transferencia interna creada por el almacén.
   amount: number; // siempre positivo; el signo lo determina "type"
   type: TransactionType;
   category: Category;

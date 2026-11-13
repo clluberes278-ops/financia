@@ -1,9 +1,9 @@
+import { exportLegacyArchive } from '../utils/legacyArchive';
+import { useFinanceStore } from '../store/useFinanceStore';
 import React, { useEffect } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Text as NativeText, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useSavingsStore } from '../store/useSavingsStore';
+import { MaterialDesignIcons as MaterialCommunityIcons } from '@react-native-vector-icons/material-design-icons/static';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { useTransactionStore } from '../store/useTransactionStore';
 import { useTranslation } from '../utils/translations';
 import { CARD_COLOR_PALETTES, getFontFamily, getShadowStyle, getThemeColors, ThemedText, type AppThemeColors } from '../utils/theme';
 import GradientView from '../components/GradientView';
@@ -11,6 +11,7 @@ import type { AppFontFamily } from '../store/useSettingsStore';
 import type { CardColor } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useGmailStore } from '../store/useGmailStore';
+import { financeApiUrl } from '../utils/financeApi';
 
 const ACCENT_COLORS = ['#8B5CF6', '#C026D3', '#EC4899', '#06B6D4', '#F97316', '#10B981'];
 const FONT_OPTIONS: { value: AppFontFamily; label: string; sample: string }[] = [
@@ -38,8 +39,8 @@ export default function SettingsScreen() {
   const gmailError = useGmailStore((state) => state.error);
   const loadGmailConnection = useGmailStore((state) => state.loadConnection);
   const disconnectGmail = useGmailStore((state) => state.disconnect);
-  const clearAllTransactions = useTransactionStore((state) => state.clearAllTransactions);
-  const clearAllPockets = useSavingsStore((state) => state.clearAllPockets);
+  const clearAllData = useFinanceStore(s => s.clearAllData);
+  const hasLegacyData = useFinanceStore(s => s.hasLegacyData);
 
   useEffect(() => {
     if (!settings.isLoaded) settings.loadSettings();
@@ -62,7 +63,7 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await Promise.all([clearAllTransactions(), clearAllPockets()]);
+              await clearAllData();
               Alert.alert(t('Datos eliminados'), t('Tu espacio financiero está listo para empezar de nuevo.'));
             } catch {
               Alert.alert(t('Error'), t('No se pudieron borrar los datos. Inténtalo de nuevo.'));
@@ -88,6 +89,13 @@ export default function SettingsScreen() {
         </View>
       </GradientView>
 
+      {hasLegacyData ? <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.warning }]}>
+        <Text style={[styles.rowLabel, { color: theme.text }]}>{t('Historial anterior conservado')}</Text>
+        <Text style={[styles.helperText, { color: theme.textSecondary }]}>{t('Los datos anteriores no tenían propietario. Se conservan intactos, separados de este espacio, hasta que decidas a quién pertenecen. Borrar este espacio no borra ese historial.')}</Text>
+        <Pressable accessibilityRole="button" style={[styles.authButton, { borderColor: theme.border }]} onPress={() => {
+          void exportLegacyArchive().catch((error: unknown) => Alert.alert(t('Error'), error instanceof Error ? error.message : t('No se pudo guardar la copia.')));
+        }}><Text style={{ color: settings.accentColor }}>{t('Guardar copia del historial anterior')}</Text></Pressable>
+      </View> : null}
       <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{t('General')}</Text>
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <Text style={[styles.rowLabel, { color: theme.text }]}>{t('Idioma')}</Text>
@@ -130,7 +138,7 @@ export default function SettingsScreen() {
             <Text style={[styles.rowLabel, { color: theme.text }]}>{t('Inicia sesión con un proveedor')}</Text>
             <Text style={[styles.helperText, { color: theme.textSecondary }]}>
               {authConfigured
-                ? t('Los datos actuales se mantienen en este dispositivo; la sincronización en la nube aún no está activada.')
+                ? (financeApiUrl ? 'Tu cuenta usará el servidor de Financia. Se requiere conexión; el modo invitado conserva sus datos localmente.' : t('Los datos actuales se mantienen en este dispositivo; la sincronización en la nube aún no está activada.'))
                 : t('Configura Supabase y activa los proveedores en el panel del proyecto para habilitar el inicio de sesión.')}
             </Text>
             <Pressable

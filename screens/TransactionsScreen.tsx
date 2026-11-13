@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import CurrencySelector from '../components/CurrencySelector';
+import { useCurrencyStore } from '../store/useCurrencyStore';
+import React, { useState } from 'react';
 import {
   View,
-  Text as NativeText,
   StyleSheet,
   FlatList,
   Pressable,
@@ -9,11 +10,11 @@ import {
   Platform,
 } from 'react-native';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialDesignIcons as MaterialCommunityIcons } from '@react-native-vector-icons/material-design-icons/static';
 import GradientView from '../components/GradientView';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { CATEGORY_LABELS, TransactionType } from '../types/transaction';
-import { formatCurrency, formatDate } from '../utils/calculations';
+import { calculateBalance, calculateTotalExpenses, calculateTotalIncome, formatCurrency, formatDate } from '../utils/calculations';
 import TransactionBottomSheet from '../components/TransactionBottomSheet';
 import TransactionModal from '../components/TransactionModal';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -24,13 +25,15 @@ type FilterType = 'todos' | 'gasto' | 'ingreso';
 const Text = ThemedText;
 
 export default function TransactionsScreen() {
-  const { transactions, deleteTransaction, clearAllTransactions } =
+  const { transactions: allTransactions, deleteTransaction, clearAllTransactions } =
     useTransactionStore();
   const accentColor = useSettingsStore((state) => state.accentColor);
   const appTheme = useSettingsStore((state) => state.theme);
   const cardColor = useSettingsStore((state) => state.cardColor);
   const theme = getThemeColors(appTheme, cardColor);
+  const currency = useCurrencyStore(s => s.currency);
   const { t } = useTranslation();
+  const transactions = allTransactions.filter(t => t.currency === currency);
 
   const bottomSheetRef = React.useRef<BottomSheetModal | null>(null);
   const [modalType, setModalType] = useState<TransactionType>('gasto');
@@ -58,8 +61,8 @@ export default function TransactionsScreen() {
           onPress: async () => {
             try {
               await deleteTransaction(id);
-            } catch {
-              Alert.alert(t('Error'), t('No se pudo actualizar el movimiento. Inténtalo de nuevo.'));
+            } catch (error: unknown) {
+              Alert.alert(t('Error'), error instanceof Error ? error.message : t('No se pudo actualizar el movimiento. Inténtalo de nuevo.'));
             }
           },
         },
@@ -70,7 +73,7 @@ export default function TransactionsScreen() {
   const handleConfirmClear = () => {
     Alert.alert(
       t('Restablecer historial'),
-      t('¿Estás seguro de que deseas eliminar todas las transacciones?'),
+      t('Se borrarán los movimientos de todas las monedas de este espacio. Primero retira el dinero de los bolsillos.'),
       [
         { text: t('Cancelar'), style: 'cancel' },
         {
@@ -79,8 +82,8 @@ export default function TransactionsScreen() {
           onPress: async () => {
             try {
               await clearAllTransactions();
-            } catch {
-              Alert.alert(t('Error'), t('No se pudieron borrar los movimientos. Inténtalo de nuevo.'));
+            } catch (error: unknown) {
+              Alert.alert(t('Error'), error instanceof Error ? error.message : t('No se pudieron borrar los movimientos. Inténtalo de nuevo.'));
             }
           },
         },
@@ -91,14 +94,15 @@ export default function TransactionsScreen() {
   const filteredTransactions = transactions
     .filter((t) => {
       if (filter === 'todos') return true;
-      return t.type === filter;
+      return t.type === filter && t.category !== 'ahorro';
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const totalFilteredAmount = filteredTransactions.reduce((acc, t) => {
-    if (filter !== 'todos') return acc + t.amount;
-    return t.type === 'ingreso' ? acc + t.amount : acc - t.amount;
-  }, 0);
+  const totalFilteredAmount = filter === 'todos'
+    ? calculateBalance(filteredTransactions)
+    : filter === 'gasto'
+      ? calculateTotalExpenses(filteredTransactions)
+      : calculateTotalIncome(filteredTransactions);
   const totalLabel = filter === 'todos'
     ? t('Balance neto')
     : filter === 'gasto'
@@ -107,6 +111,7 @@ export default function TransactionsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <CurrencySelector />
       {/* Barra superior de acciones */}
       <View style={styles.topBar}>
         <View>
@@ -138,7 +143,7 @@ export default function TransactionsScreen() {
         <View style={styles.totalCopy}>
           <Text style={styles.totalLabel}>{totalLabel}</Text>
           <Text style={styles.totalAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
-            {formatCurrency(totalFilteredAmount)}
+            {formatCurrency(totalFilteredAmount, currency)}
           </Text>
         </View>
         <View style={styles.totalIcon}>
@@ -273,15 +278,15 @@ export default function TransactionsScreen() {
 
               <View style={styles.cardRight}>
                 <Text style={[isIncome ? styles.amountIncome : styles.amountExpense, { color: isIncome ? theme.income : theme.expense }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
-                  {isIncome ? '+' : '-'} {formatCurrency(item.amount)}
+                  {isIncome ? '+' : '-'} {formatCurrency(item.amount, item.currency)}
                 </Text>
-                <Pressable
+                {item.category === 'ahorro' ? <Text style={[styles.dateLabel, { color: theme.textSecondary }]}>{t('Transferencia de ahorro')}</Text> : <Pressable
                   style={styles.deleteAction}
                   hitSlop={8}
                   onPress={() => handleConfirmDelete(item.id, item.note)}
                 >
                   <Text style={styles.deleteActionText}>{t('Eliminar')}</Text>
-                </Pressable>
+                </Pressable>}
               </View>
             </View>
           );

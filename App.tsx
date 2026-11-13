@@ -1,9 +1,10 @@
+import { useFinanceStore } from './store/useFinanceStore';
 import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar } from 'react-native';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import DashboardScreen from './screens/DashboardScreen';
 import TransactionsScreen from './screens/TransactionsScreen';
@@ -13,12 +14,12 @@ import SettingsScreen from './screens/SettingsScreen';
 import { useTranslation } from './utils/translations';
 import { useSettingsStore } from './store/useSettingsStore';
 import { getFontFamily, getShadowStyle, getThemeColors } from './utils/theme';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialDesignIcons as MaterialCommunityIcons } from '@react-native-vector-icons/material-design-icons/static';
 import type { MainTabParamList } from './types/navigation';
 import { useAuthStore } from './store/useAuthStore';
 import { useGmailStore } from './store/useGmailStore';
 import WelcomeScreen from './screens/WelcomeScreen';
-import { ActivityIndicator, AppState, View } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, View } from 'react-native';
 import { ThemedText } from './utils/theme';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -30,6 +31,12 @@ export default function App() {
   const initializeAuth = useAuthStore((state) => state.initialize);
   const loadImportedTransactions = useGmailStore((state) => state.loadImportedTransactions);
   const [continueAsGuest, setContinueAsGuest] = useState(false);
+  const financeOwner = useFinanceStore(s => s.owner);
+  const financeLoaded = useFinanceStore(s => s.isLoaded);
+  const financeError = useFinanceStore(s => s.error);
+  const activateOwner = useFinanceStore(s => s.activateOwner);
+  const expectedOwner = session ? 'user:' + session.user.id : 'guest';
+  const financeReady = financeLoaded && financeOwner === expectedOwner;
   const accentColor = useSettingsStore((state) => state.accentColor);
   const appTheme = useSettingsStore((state) => state.theme);
   const fontFamily = useSettingsStore((state) => state.fontFamily);
@@ -41,7 +48,11 @@ export default function App() {
   }, [initializeAuth]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!authLoading && financeOwner !== expectedOwner) void activateOwner(expectedOwner);
+  }, [authLoading, financeOwner, expectedOwner, activateOwner]);
+
+  useEffect(() => {
+    if (!session || !financeReady) return;
 
     void loadImportedTransactions();
     const appStateSubscription = AppState.addEventListener('change', (state) => {
@@ -55,13 +66,13 @@ export default function App() {
       appStateSubscription.remove();
       clearInterval(refreshInterval);
     };
-  }, [session?.user.id, loadImportedTransactions]);
+  }, [session?.user.id, financeReady, loadImportedTransactions]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
         <SafeAreaProvider>
-          <StatusBar style={appTheme === 'dark' ? 'light' : 'dark'} />
+          <StatusBar barStyle={appTheme === 'dark' ? 'light-content' : 'dark-content'} />
 
           <NavigationContainer>
             {authLoading ? (
@@ -71,8 +82,17 @@ export default function App() {
               </View>
             ) : !session && !continueAsGuest ? (
               <WelcomeScreen onContinueWithoutAccount={() => setContinueAsGuest(true)} />
+            ) : !financeReady ? (
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: theme.background }}>
+                {financeError ? <>
+                  <ThemedText>{financeError}</ThemedText>
+                  <Pressable accessibilityRole="button" onPress={() => void activateOwner(expectedOwner)} style={{ padding: 16 }}>
+                    <ThemedText style={{ color: accentColor }}>{t('Reintentar')}</ThemedText>
+                  </Pressable>
+                </> : <ActivityIndicator size="large" color={accentColor} />}
+              </View>
             ) : (
-              <Tab.Navigator
+              <Tab.Navigator key={expectedOwner}
 
               screenOptions={{
                 headerStyle: {

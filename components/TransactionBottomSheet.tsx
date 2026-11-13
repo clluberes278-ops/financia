@@ -1,3 +1,6 @@
+import { parseMoney } from '../utils/money';
+import CurrencySelector from './CurrencySelector';
+import { useCurrencyStore } from '../store/useCurrencyStore';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -11,12 +14,12 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialDesignIcons as MaterialCommunityIcons } from '@react-native-vector-icons/material-design-icons/static';
 import GradientView from './GradientView';
 
 const bottomSheetModule = Platform.OS === 'web' ? null : require('@gorhom/bottom-sheet');
 const BottomSheetModal = bottomSheetModule?.BottomSheetModal ?? null;
-const BottomSheetView = bottomSheetModule?.BottomSheetView ?? View;
+const BottomSheetScrollView = bottomSheetModule?.BottomSheetScrollView ?? ScrollView;
 const BottomSheetBackdrop = bottomSheetModule?.BottomSheetBackdrop ?? View;
 import { Category, CATEGORY_LABELS, TransactionType } from '../types/transaction';
 import { useTransactionStore } from '../store/useTransactionStore';
@@ -24,15 +27,17 @@ import { useSettingsStore } from '../store/useSettingsStore';
 import { useTranslation } from '../utils/translations';
 import { getThemeColors, ThemedText } from '../utils/theme';
 
+import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import type { TransactionBottomSheetProps } from '../types/app';
 
-const CATEGORIES = Object.keys(CATEGORY_LABELS) as Category[];
+const CATEGORIES = (Object.keys(CATEGORY_LABELS) as Category[]).filter(category => category !== 'ahorro');
 const Text = ThemedText;
 
 export default function TransactionBottomSheet({
   bottomSheetRef,
   initialType = 'gasto',
 }: TransactionBottomSheetProps) {
+  const currency = useCurrencyStore(s => s.currency);
   const addTransaction = useTransactionStore((s) => s.addTransaction);
   const accentColor = useSettingsStore((s) => s.accentColor);
   const appTheme = useSettingsStore((s) => s.theme);
@@ -54,10 +59,9 @@ export default function TransactionBottomSheet({
     setCategory(initialType === 'ingreso' ? 'salario' : 'comida');
   }, [initialType]);
 
-  if (Platform.OS === 'web') return null;
 
   const handleSubmit = async () => {
-    const numericAmount = parseFloat(amount.replace(',', '.'));
+    const numericAmount = parseMoney(amount);
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       setAmountError('Ingresa un monto mayor que cero.');
       return;
@@ -69,6 +73,7 @@ export default function TransactionBottomSheet({
     try {
       await addTransaction({
         amount: numericAmount,
+        currency,
         type,
         category,
         date: new Date().toISOString(),
@@ -87,7 +92,7 @@ export default function TransactionBottomSheet({
   };
 
   const renderBackdrop = useCallback(
-    (props: any) => (
+    (props: BottomSheetBackdropProps) => (
       <BottomSheetBackdrop
         {...props}
         disappearsOnIndex={-1}
@@ -98,16 +103,21 @@ export default function TransactionBottomSheet({
     []
   );
 
+  if (Platform.OS === 'web') return null;
+
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
       index={0}
-      snapPoints={['65%']}
+      snapPoints={['85%']}
+      enableDynamicSizing={false}
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
       backdropComponent={renderBackdrop}
       enablePanDownToClose
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <BottomSheetView style={[styles.contentContainer, { backgroundColor: theme.surface }]}>
+        <BottomSheetScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.surface }]}>
         <View style={styles.handleBar} />
 
         <View style={styles.header}>
@@ -158,6 +168,7 @@ export default function TransactionBottomSheet({
             </Pressable>
           </View>
 
+          <CurrencySelector />
           <View style={[styles.inputContainer, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}>
             <MaterialCommunityIcons name="currency-usd" size={20} color={theme.textSecondary} style={styles.inputIcon} />
             <TextInput
@@ -172,7 +183,7 @@ export default function TransactionBottomSheet({
                 if (amountError) setAmountError('');
               }}
               onBlur={() => {
-                const numericAmount = parseFloat(amount.replace(',', '.'));
+                const numericAmount = parseMoney(amount);
                 if (amount && (!Number.isFinite(numericAmount) || numericAmount <= 0)) {
                   setAmountError('Ingresa un monto mayor que cero.');
                 }
@@ -227,7 +238,7 @@ export default function TransactionBottomSheet({
             </GradientView>
           </Pressable>
         </KeyboardAvoidingView>
-        </BottomSheetView>
+        </BottomSheetScrollView>
       </TouchableWithoutFeedback>
     </BottomSheetModal>
   );

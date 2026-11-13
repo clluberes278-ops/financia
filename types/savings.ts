@@ -1,5 +1,8 @@
+import type { Currency } from './transaction';
+
 export interface SavingsPocket {
   id: string;
+  currency: Currency;
   name: string;
   emoji: string;
   targetAmount: number; // Meta fija que el usuario desea alcanzar

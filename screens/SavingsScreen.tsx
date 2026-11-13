@@ -1,4 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { parseMoney } from '../utils/money';
+import CurrencySelector from '../components/CurrencySelector';
+import { useCurrencyStore } from '../store/useCurrencyStore';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -26,14 +29,17 @@ const QUICK_AMOUNTS = [500, 1000, 2000, 5000];
 const Text = ThemedText;
 
 export default function SavingsScreen() {
-  const { pockets, isLoaded, loadPockets, createPocket, depositToPocket, withdrawFromPocket, deletePocket } =
+  const { pockets: allPockets, createPocket, depositToPocket, withdrawFromPocket, deletePocket } =
     useSavingsStore();
-  const { transactions, addTransaction } = useTransactionStore();
+  const allTransactions = useTransactionStore(s => s.transactions);
   const accentColor = useSettingsStore((state) => state.accentColor);
   const appTheme = useSettingsStore((state) => state.theme);
   const cardColor = useSettingsStore((state) => state.cardColor);
   const theme = getThemeColors(appTheme, cardColor);
+  const currency = useCurrencyStore(s => s.currency);
   const { t } = useTranslation();
+  const transactions = allTransactions.filter(t => t.currency === currency);
+  const pockets = allPockets.filter(p => p.currency === currency);
 
   const mainBalance = calculateBalance(transactions);
 
@@ -49,22 +55,19 @@ export default function SavingsScreen() {
   const [isCreating, setIsCreating] = useState(false);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
 
-  useEffect(() => {
-    if (!isLoaded) loadPockets();
-  }, [isLoaded]);
 
   const totalSaved = pockets.reduce((acc, p) => acc + p.currentAmount, 0);
   const totalTarget = pockets.reduce((acc, p) => acc + p.targetAmount, 0);
   const globalProgress = totalTarget > 0 ? Math.min(100, Math.round((totalSaved / totalTarget) * 100)) : 0;
 
   const handleCreatePocket = async () => {
-    const target = parseFloat(newPocketTarget.replace(',', '.'));
+    const target = parseMoney(newPocketTarget);
     if (!newPocketName.trim()) {
       Alert.alert('Falta información', 'Por favor ingresa un nombre para la meta o bolsillo.');
       return;
     }
-    if (isNaN(target) || target <= 0) {
-      Alert.alert('Monto inválido', 'Por favor ingresa una meta fija válida en pesos.');
+    if (!Number.isFinite(target) || target <= 0) {
+      Alert.alert('Monto inválido', 'Por favor ingresa una meta fija válida.');
       return;
     }
 
@@ -73,6 +76,7 @@ export default function SavingsScreen() {
       await createPocket({
         name: newPocketName.trim(),
         targetAmount: target,
+        currency,
         emoji: selectedEmoji,
       });
       Keyboard.dismiss();
@@ -80,8 +84,8 @@ export default function SavingsScreen() {
       setNewPocketTarget('');
       setSelectedEmoji('📱');
       setCreateModalVisible(false);
-    } catch {
-      Alert.alert(t('Error'), t('No se pudo crear el bolsillo. Inténtalo de nuevo.'));
+    } catch (error: unknown) {
+      Alert.alert(t('Error'), error instanceof Error ? error.message : t('No se pudo crear el bolsillo. Inténtalo de nuevo.'));
     } finally {
       setIsCreating(false);
     }
@@ -96,8 +100,8 @@ export default function SavingsScreen() {
 
   const handleConfirmAction = async () => {
     if (!selectedPocket) return;
-    const amount = parseFloat(actionAmount.replace(',', '.'));
-    if (isNaN(amount) || amount <= 0) {
+    const amount = parseMoney(actionAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
       Alert.alert('Monto inválido', 'Ingresa un monto válido.');
       return;
     }
@@ -106,36 +110,24 @@ export default function SavingsScreen() {
     try {
       if (actionType === 'abonar') {
         if (amount > mainBalance) {
-          Alert.alert('Saldo insuficiente', `No tienes suficiente saldo disponible (${formatCurrency(mainBalance)}).`);
+          Alert.alert('Saldo insuficiente', `No tienes suficiente saldo disponible (${formatCurrency(mainBalance, currency)}).`);
           return;
         }
         await depositToPocket(selectedPocket.id, amount);
-        await addTransaction({
-          amount,
-          type: 'gasto',
-          category: 'ahorro',
-          date: new Date().toISOString(),
-          note: `Abono a bolsillo: ${selectedPocket.name}`,
-        });
+
       } else {
         if (amount > selectedPocket.currentAmount) {
-          Alert.alert('Monto excesivo', `Solo tienes ${formatCurrency(selectedPocket.currentAmount)}.`);
+          Alert.alert('Monto excesivo', `Solo tienes ${formatCurrency(selectedPocket.currentAmount, currency)}.`);
           return;
         }
         await withdrawFromPocket(selectedPocket.id, amount);
-        await addTransaction({
-          amount,
-          type: 'ingreso',
-          category: 'ahorro',
-          date: new Date().toISOString(),
-          note: `Retiro de bolsillo: ${selectedPocket.name}`,
-        });
+
       }
       Keyboard.dismiss();
       setActionModalVisible(false);
       setActionAmount('');
-    } catch {
-      Alert.alert(t('Error'), t('No se pudo completar la operación. Inténtalo de nuevo.'));
+    } catch (error: unknown) {
+      Alert.alert(t('Error'), error instanceof Error ? error.message : t('No se pudo completar la operación. Inténtalo de nuevo.'));
     } finally {
       setIsProcessingAction(false);
     }
@@ -145,7 +137,7 @@ export default function SavingsScreen() {
     Alert.alert(
       'Eliminar Bolsillo',
       pocket.currentAmount > 0
-        ? `El bolsillo "${pocket.name}" tiene ${formatCurrency(pocket.currentAmount)}. ¿Deseas devolverlo a la cuenta principal?`
+        ? `El bolsillo "${pocket.name}" tiene ${formatCurrency(pocket.currentAmount, currency)}. ¿Deseas devolverlo a la cuenta principal?`
         : `¿Deseas eliminar el bolsillo "${pocket.name}"?`,
       [
         { text: 'Cancelar', style: 'cancel' },
@@ -153,16 +145,11 @@ export default function SavingsScreen() {
           text: 'Eliminar',
           style: 'destructive',
           onPress: async () => {
-            if (pocket.currentAmount > 0) {
-              await addTransaction({
-                amount: pocket.currentAmount,
-                type: 'ingreso',
-                category: 'ahorro',
-                date: new Date().toISOString(),
-                note: `Devolución por bolsillo eliminado: ${pocket.name}`,
-              });
+            try {
+              await deletePocket(pocket.id);
+            } catch (error: unknown) {
+              Alert.alert(t('Error'), error instanceof Error ? error.message : t('No se pudo completar la operación. Inténtalo de nuevo.'));
             }
-            await deletePocket(pocket.id);
           },
         },
       ]
@@ -176,6 +163,7 @@ export default function SavingsScreen() {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
+        <CurrencySelector />
         <GradientView
           colors={[theme.heroStart, theme.heroEnd]}
           start={{ x: 0, y: 0 }}
@@ -185,7 +173,7 @@ export default function SavingsScreen() {
           <View style={styles.summaryHeader}>
             <View>
               <Text style={styles.summaryBadgeTitle}>{t('BOLSAS & METAS DE AHORRO')}</Text>
-              <Text style={styles.summaryMainAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{formatCurrency(totalSaved)}</Text>
+              <Text style={styles.summaryMainAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{formatCurrency(totalSaved, currency)}</Text>
             </View>
             <View style={styles.countBadge}>
               <Text style={styles.countBadgeText}>{pockets.length} {pockets.length === 1 ? t('meta') : t('metas')}</Text>
@@ -195,7 +183,7 @@ export default function SavingsScreen() {
           {totalTarget > 0 && (
             <View style={styles.summaryProgressSection}>
               <View style={styles.summaryProgressLabels}>
-                <Text style={styles.summaryTargetText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{t('Objetivo global')}: {formatCurrency(totalTarget)}</Text>
+                <Text style={styles.summaryTargetText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{t('Objetivo global')}: {formatCurrency(totalTarget, currency)}</Text>
                 <Text style={styles.summaryPercentText}>{globalProgress}%</Text>
               </View>
               <View style={styles.summaryBarBg}>
@@ -251,7 +239,7 @@ export default function SavingsScreen() {
                           {pocket.name}
                         </Text>
                         <Text style={[styles.pocketTargetText, { color: theme.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
-                          Meta: {formatCurrency(pocket.targetAmount)}
+                          Meta: {formatCurrency(pocket.targetAmount, currency)}
                         </Text>
                       </View>
                     </View>
@@ -269,13 +257,13 @@ export default function SavingsScreen() {
                     <View style={{ flex: 1, marginRight: 8 }}>
                       <Text style={[styles.pocketAmountLabel, { color: theme.textSecondary }]}>{t('Ahorrado')}</Text>
                       <Text style={[styles.pocketCurrentAmount, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
-                        {formatCurrency(pocket.currentAmount)}
+                        {formatCurrency(pocket.currentAmount, currency)}
                       </Text>
                     </View>
                     <View style={styles.pocketRemainingCol}>
                       <Text style={[styles.pocketRemainingLabel, { color: theme.textSecondary }]}>{t('Estado')}</Text>
                       <Text style={[styles.pocketRemaining, { color: theme.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
-                        {isCompleted ? t('Completado') : `${t('Falta')} ${formatCurrency(pocket.targetAmount - pocket.currentAmount)}`}
+                        {isCompleted ? t('Completado') : `${t('Falta')} ${formatCurrency(pocket.targetAmount - pocket.currentAmount, currency)}`}
                       </Text>
                     </View>
                   </View>
@@ -352,9 +340,9 @@ export default function SavingsScreen() {
                   maxLength={30}
                 />
 
-                <Text style={[styles.modalInputLabel, { color: theme.textSecondary }]}>{t('Meta fija en pesos (RD$)')}</Text>
+                <Text style={[styles.modalInputLabel, { color: theme.textSecondary }]}>{t('Meta fija')} ({currency})</Text>
                 <View style={[styles.amountInputContainer, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}>
-                  <Text style={[styles.amountPrefix, { color: accentColor }]}>RD$</Text>
+                  <Text style={[styles.amountPrefix, { color: accentColor }]}>{currency}</Text>
                   <TextInput
                     style={[styles.amountField, { color: theme.text }]}
                     placeholder="0.00"
@@ -399,18 +387,18 @@ export default function SavingsScreen() {
                 <View style={[styles.modalAccountInfoRow, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}>
                   <Text style={[styles.modalSubtitle, { color: theme.text }]}>
                     {actionType === 'abonar'
-                      ? `Saldo disponible en cuenta: ${formatCurrency(mainBalance)}`
-                      : `Disponible en bolsillo: ${formatCurrency(selectedPocket?.currentAmount || 0)}`}
+                      ? `Saldo disponible en cuenta: ${formatCurrency(mainBalance, currency)}`
+                      : `Disponible en bolsillo: ${formatCurrency(selectedPocket?.currentAmount || 0, currency)}`}
                   </Text>
                   {actionType === 'abonar' && (
                     <Text style={[styles.modalSubtitleSub, { color: theme.textSecondary }]}>
-                      Ahorrado actualmente: {formatCurrency(selectedPocket?.currentAmount || 0)} / {formatCurrency(selectedPocket?.targetAmount || 0)}
+                      Ahorrado actualmente: {formatCurrency(selectedPocket?.currentAmount || 0, currency)} / {formatCurrency(selectedPocket?.targetAmount || 0, currency)}
                     </Text>
                   )}
                 </View>
 
                 <View style={[styles.amountInputContainer, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}>
-                  <Text style={[styles.amountPrefix, { color: accentColor }]}>RD$</Text>
+                  <Text style={[styles.amountPrefix, { color: accentColor }]}>{currency}</Text>
                   <TextInput
                     style={[styles.amountField, { color: theme.text }]}
                     placeholder="0.00"
@@ -431,7 +419,7 @@ export default function SavingsScreen() {
                         key={val}
                         style={[styles.quickChip, { backgroundColor: `${accentColor}18`, borderColor: `${accentColor}55` }]}
                         onPress={() => {
-                          const curr = parseFloat(actionAmount.replace(',', '.')) || 0;
+                          const curr = parseMoney(actionAmount) || 0;
                           setActionAmount((curr + val).toString());
                         }}
                       >

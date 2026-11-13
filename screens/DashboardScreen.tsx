@@ -1,4 +1,6 @@
-import React, { useEffect } from 'react';
+import CurrencySelector from '../components/CurrencySelector';
+import { useCurrencyStore } from '../store/useCurrencyStore';
+import React from 'react';
 import {
   View,
   StyleSheet,
@@ -7,8 +9,8 @@ import {
   useWindowDimensions,
   Platform,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { StatusBar } from 'react-native';
+import { MaterialDesignIcons as MaterialCommunityIcons } from '@react-native-vector-icons/material-design-icons/static';
 import GradientView from '../components/GradientView';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -32,16 +34,15 @@ const Text = ThemedText;
 export default function DashboardScreen() {
   const { width } = useWindowDimensions();
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
-  const { transactions, loadTransactions } = useTransactionStore();
+  const allTransactions = useTransactionStore(s => s.transactions);
+  const currency = useCurrencyStore(s => s.currency);
   const { t } = useTranslation();
+  const transactions = allTransactions.filter(t => t.currency === currency);
   const appTheme = useSettingsStore((state) => state.theme);
   const accentColor = useSettingsStore((state) => state.accentColor);
   const cardColor = useSettingsStore((state) => state.cardColor);
   const theme = getThemeColors(appTheme, cardColor);
 
-  useEffect(() => {
-    loadTransactions();
-  }, []);
 
   const balance = calculateBalance(transactions);
   const income = calculateTotalIncome(transactions);
@@ -50,7 +51,7 @@ export default function DashboardScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
-      <StatusBar style={appTheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar barStyle={appTheme === 'dark' ? 'light-content' : 'dark-content'} />
 
       {/* --- HEADER --- */}
       <View style={styles.header}>
@@ -68,6 +69,7 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scrollContent, { paddingHorizontal: width < 360 ? 14 : 20 }]}
       >
+        <CurrencySelector />
         {/* --- MAIN BALANCE CARD --- */}
         <GradientView
           colors={[theme.heroStart, theme.heroEnd]}
@@ -82,8 +84,8 @@ export default function DashboardScreen() {
             <Text style={styles.heroEyebrow}>{t('Financia Smart Bank')}</Text>
             <MaterialCommunityIcons name="creation" size={18} color="rgba(255,255,255,0.8)" />
           </View>
-          <Text style={styles.balanceLabel}>{t('Saldo Total')}</Text>
-          <Text style={styles.balanceAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>{formatCurrency(balance)}</Text>
+          <Text style={styles.balanceLabel}>{t('Saldo disponible')}</Text>
+          <Text style={styles.balanceAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>{formatCurrency(balance, currency)}</Text>
 
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
@@ -92,7 +94,7 @@ export default function DashboardScreen() {
               </View>
               <View style={styles.summaryCopy}>
                 <Text style={styles.summaryLabel}>{t('Ingresos')}</Text>
-                <Text style={styles.summaryValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{formatCurrency(income)}</Text>
+                <Text style={styles.summaryValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{formatCurrency(income, currency)}</Text>
               </View>
             </View>
 
@@ -102,7 +104,7 @@ export default function DashboardScreen() {
               </View>
               <View style={styles.summaryCopy}>
                 <Text style={styles.summaryLabel}>{t('Gastos')}</Text>
-                <Text style={styles.summaryValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{formatCurrency(expenses)}</Text>
+                <Text style={styles.summaryValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{formatCurrency(expenses, currency)}</Text>
               </View>
             </View>
           </View>
@@ -138,7 +140,7 @@ export default function DashboardScreen() {
                   styles.transactionAmount,
                   { color: item.type === 'ingreso' ? theme.income : theme.expense }
                 ]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-                  {item.type === 'ingreso' ? '+' : '-'} {formatCurrency(item.amount)}
+                  {item.type === 'ingreso' ? '+' : '-'} {formatCurrency(item.amount, item.currency)}
                 </Text>
               </View>
             ))

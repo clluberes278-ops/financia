@@ -1,4 +1,4 @@
-import { Transaction, Category } from '../types/transaction';
+import { Transaction, Category, Currency } from '../types/transaction';
 
 /**
  * El saldo NUNCA se guarda como número aparte — siempre se deriva de la lista
@@ -13,7 +13,7 @@ export function calculateBalance(transactions: Transaction[]): number {
 
 export function calculateTotalIncome(transactions: Transaction[]): number {
   return transactions
-    .filter((t) => t.type === 'ingreso')
+    .filter((t) => t.type === 'ingreso' && t.category !== 'ahorro')
     .reduce((sum, t) => sum + t.amount, 0);
 }
 
@@ -33,7 +33,7 @@ export function groupExpensesByCategory(
   const totals = new Map<Category, number>();
 
   transactions
-    .filter((t) => t.type === 'gasto')
+    .filter((t) => t.type === 'gasto' && t.category !== 'ahorro')
     .forEach((t) => {
       totals.set(t.category, (totals.get(t.category) ?? 0) + t.amount);
     });
@@ -52,10 +52,11 @@ export function getRecentTransactions(
     .slice(0, limit);
 }
 
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number, currency: Currency = 'DOP'): string {
   return new Intl.NumberFormat('es-DO', {
     style: 'currency',
-    currency: 'DOP',
+    currency,
+    currencyDisplay: 'code',
   }).format(amount);
 }
 
@@ -146,7 +147,7 @@ export function getDailyAverageExpense(
 }
 
 export function getHighestExpense(transactions: Transaction[]): Transaction | null {
-  const expenses = transactions.filter((t) => t.type === 'gasto');
+  const expenses = transactions.filter((t) => t.type === 'gasto' && t.category !== 'ahorro');
   if (expenses.length === 0) return null;
   return expenses.reduce((max, t) => (t.amount > max.amount ? t : max), expenses[0]);
 }
@@ -170,7 +171,7 @@ export function getWeeklyExpenses(
     const dayStr = d.toISOString().split('T')[0];
 
     const total = transactions
-      .filter((t) => t.type === 'gasto' && t.date.startsWith(dayStr))
+      .filter((t) => t.type === 'gasto' && t.category !== 'ahorro' && t.date.startsWith(dayStr))
       .reduce((sum, t) => sum + t.amount, 0);
 
     const dayNames = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'];
@@ -201,7 +202,7 @@ export function getMonthlyTrend(
 
     const total = transactions
       .filter((t) => {
-        if (t.type !== 'gasto') return false;
+        if (t.type !== 'gasto' || t.category === 'ahorro') return false;
         const td = new Date(t.date);
         return td.getFullYear() === y && td.getMonth() === m;
       })
@@ -215,4 +216,12 @@ export function getMonthlyTrend(
     });
   }
   return result;
+}
+
+/** Cuenta días de calendario inclusive, sin redondear las 23:59:59 finales. */
+export function countCalendarDays(start: Date, end: Date): number {
+  const first = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+  const last = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+  if (last < first) throw new Error('La fecha final debe ser igual o posterior a la inicial.');
+  return Math.floor((last - first) / 86400000) + 1;
 }

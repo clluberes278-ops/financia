@@ -1,6 +1,9 @@
+import { parseMoney } from '../utils/money';
+import CurrencySelector from './CurrencySelector';
+import { useCurrencyStore } from '../store/useCurrencyStore';
 import React, { useState } from 'react';
 import { Alert, View, TextInput, Pressable, StyleSheet, ScrollView, Keyboard } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialDesignIcons as MaterialCommunityIcons } from '@react-native-vector-icons/material-design-icons/static';
 import GradientView from './GradientView';
 import { Category, CATEGORY_LABELS, TransactionType } from '../types/transaction';
 import { useTransactionStore } from '../store/useTransactionStore';
@@ -10,9 +13,10 @@ import { getThemeColors, ThemedText } from '../utils/theme';
 
 const Text = ThemedText;
 
-const CATEGORIES = Object.keys(CATEGORY_LABELS) as Category[];
+const CATEGORIES = (Object.keys(CATEGORY_LABELS) as Category[]).filter(category => category !== 'ahorro');
 
 export default function TransactionForm({ onDone }: { onDone?: () => void }) {
+  const currency = useCurrencyStore(s => s.currency);
   const addTransaction = useTransactionStore((s) => s.addTransaction);
   const accentColor = useSettingsStore((s) => s.accentColor);
   const appTheme = useSettingsStore((s) => s.theme);
@@ -28,7 +32,7 @@ export default function TransactionForm({ onDone }: { onDone?: () => void }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    const numericAmount = parseFloat(amount.replace(',', '.'));
+    const numericAmount = parseMoney(amount);
     // Validación básica: no dejar guardar montos vacíos, negativos o no numéricos
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       setAmountError('Ingresa un monto mayor que cero.');
@@ -41,6 +45,7 @@ export default function TransactionForm({ onDone }: { onDone?: () => void }) {
     try {
       await addTransaction({
         amount: numericAmount,
+        currency,
         type,
         category,
         date: new Date().toISOString(),
@@ -97,6 +102,7 @@ export default function TransactionForm({ onDone }: { onDone?: () => void }) {
         </Pressable>
       </View>
 
+      <CurrencySelector />
       <View style={[styles.inputContainer, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}>
         <MaterialCommunityIcons name="currency-usd" size={20} color={theme.textSecondary} style={styles.inputIcon} />
         <TextInput
@@ -111,7 +117,7 @@ export default function TransactionForm({ onDone }: { onDone?: () => void }) {
             if (amountError) setAmountError('');
           }}
           onBlur={() => {
-            const numericAmount = parseFloat(amount.replace(',', '.'));
+            const numericAmount = parseMoney(amount);
             if (amount && (!Number.isFinite(numericAmount) || numericAmount <= 0)) {
               setAmountError('Ingresa un monto mayor que cero.');
             }

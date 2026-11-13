@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialDesignIcons as MaterialCommunityIcons } from '@react-native-vector-icons/material-design-icons/static';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { CATEGORY_LABELS, TransactionType } from '../types/transaction';
 import { formatCurrency, formatDate } from '../utils/calculations';

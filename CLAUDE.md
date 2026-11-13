@@ -1,6 +1,6 @@
 # Financia — Guía de desarrollo
 
-Financia es una aplicación de finanzas personales construida con Expo, React Native y TypeScript. Los datos se guardan localmente; no hay backend.
+Financia es una aplicación de finanzas personales construida con React Native CLI y TypeScript, sin Expo. El almacenamiento local se conserva; la API opcional ASP.NET Core 10 está en backend/. Consulta backend/README.md antes de modificar persistencia remota.
 
 ## Comandos
 
@@ -9,7 +9,9 @@ Financia es una aplicación de finanzas personales construida con Expo, React Na
 - iOS: `npm run ios`
 - Web: `npm run web`
 - Dependencias: `npm install`
-- Preview EAS: `eas build --platform android --profile preview` o `eas build --platform ios --profile preview`
+- Backend: `npm run api:start`
+- Pruebas backend: `npm run api:test`
+- APK debug: `cd android` y `./gradlew assembleDebug`
 - Verificación TypeScript: `npx tsc --noEmit`
 
 ## Estructura actual

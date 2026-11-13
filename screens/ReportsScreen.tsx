@@ -1,3 +1,5 @@
+import CurrencySelector from '../components/CurrencySelector';
+import { useCurrencyStore } from '../store/useCurrencyStore';
 import React, { useLayoutEffect, useState } from 'react';
 import {
   View,
@@ -10,7 +12,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { PieChart, LineChart } from 'react-native-gifted-charts';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialDesignIcons as MaterialCommunityIcons } from '@react-native-vector-icons/material-design-icons/static';
 import GradientView from '../components/GradientView';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -18,6 +20,7 @@ import { exportReportAsPdf } from '../utils/generatePdf';
 import { exportTransactionsToCSV } from '../utils/export';
 import { useTransactionStore } from '../store/useTransactionStore';
 import {
+  countCalendarDays,
   calculateTotalIncome,
   calculateTotalExpenses,
   groupExpensesByCategory,
@@ -43,12 +46,14 @@ export default function ReportsScreen() {
   const isNarrowScreen = screenWidth < 380;
   const kpiCardWidth = isNarrowScreen ? screenWidth - 36 : (screenWidth - 48) / 2;
   const pieRadius = Math.min(80, Math.max(52, (screenWidth - 200) / 2));
-  const { transactions } = useTransactionStore();
+  const allTransactions = useTransactionStore(s => s.transactions);
   const accentColor = useSettingsStore((state) => state.accentColor);
   const appTheme = useSettingsStore((state) => state.theme);
   const cardColor = useSettingsStore((state) => state.cardColor);
   const theme = getThemeColors(appTheme, cardColor);
+  const currency = useCurrencyStore(s => s.currency);
   const { t } = useTranslation();
+  const transactions = allTransactions.filter(t => t.currency === currency);
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
 
   const [isExporting, setIsExporting] = useState(false);
@@ -70,7 +75,7 @@ export default function ReportsScreen() {
     const transactionTimestamp = new Date(transaction.date).getTime();
     return transactionTimestamp >= startTimestamp && transactionTimestamp <= endTimestamp;
   });
-  const daysInPeriod = Math.max(1, Math.round((endTimestamp - startTimestamp) / 86400000) + 1);
+  const daysInPeriod = countCalendarDays(startDate, endDate);
   const currentMonthData = {
     label: periodLabel,
   };
@@ -104,7 +109,8 @@ export default function ReportsScreen() {
         monthTransactions,
         startDate.getFullYear(),
         startDate.getMonth(),
-        periodLabel
+        periodLabel,
+        currency
       );
     } catch (err) {
       Alert.alert(t('Error'), t('No se pudo generar el PDF. Inténtalo de nuevo.'));
@@ -117,7 +123,7 @@ export default function ReportsScreen() {
     if (isExporting) return;
     setIsExporting(true);
     try {
-      await exportTransactionsToCSV(transactions);
+      await exportTransactionsToCSV(monthTransactions);
     } catch (err) {
       Alert.alert(t('Error'), t('No se pudo generar el CSV. Inténtalo de nuevo.'));
     } finally {
@@ -182,6 +188,7 @@ export default function ReportsScreen() {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
+        <CurrencySelector />
         {/* Selector de Período */}
         <View style={[styles.periodSelectorCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.periodHeader}>
@@ -270,7 +277,7 @@ export default function ReportsScreen() {
 
           <Text style={styles.netSavingsAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
             {netSavings >= 0 ? '+' : ''}
-            {formatCurrency(netSavings)}
+            {formatCurrency(netSavings, currency)}
           </Text>
           <Text style={styles.netSavingsNote}>
             {monthIncome > 0
@@ -283,14 +290,14 @@ export default function ReportsScreen() {
             <View style={styles.splitItem}>
               <Text style={styles.splitLabel}>{t('Ingresos')}</Text>
               <Text style={styles.splitIncome} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
-                {formatCurrency(monthIncome)}
+                {formatCurrency(monthIncome, currency)}
               </Text>
             </View>
             <View style={styles.splitDivider} />
             <View style={styles.splitItem}>
               <Text style={styles.splitLabel}>{t('Gastos')}</Text>
               <Text style={styles.splitExpense} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
-                {formatCurrency(monthExpenses)}
+                {formatCurrency(monthExpenses, currency)}
               </Text>
             </View>
           </View>
@@ -324,7 +331,7 @@ export default function ReportsScreen() {
           <View style={[styles.kpiCard, { width: kpiCardWidth, backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={styles.kpiIcon}>📅</Text>
             <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
-              {formatCurrency(dailyAverage)}
+              {formatCurrency(dailyAverage, currency)}
             </Text>
             <Text style={styles.kpiLabel}>{t('Gasto promedio / día')}</Text>
           </View>
@@ -342,7 +349,7 @@ export default function ReportsScreen() {
           <View style={[styles.kpiCard, { width: kpiCardWidth, backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={styles.kpiIcon}>🔥</Text>
             <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
-              {highestExpense ? formatCurrency(highestExpense.amount) : 'RD$ 0.00'}
+              {formatCurrency(highestExpense?.amount ?? 0, currency)}
             </Text>
             <Text style={styles.kpiLabel} numberOfLines={1}>
               {highestExpense?.note || 'Mayor gasto puntual'}
@@ -461,7 +468,7 @@ export default function ReportsScreen() {
                     </View>
                     <View style={styles.catRight}>
                       <Text style={styles.catAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
-                        {formatCurrency(total)}
+                        {formatCurrency(total, currency)}
                       </Text>
                       <Text style={styles.catPercent}>{pct}% del total</Text>
                     </View>
@@ -505,7 +512,7 @@ export default function ReportsScreen() {
                       adjustsFontSizeToFit
                       minimumFontScale={0.55}
                     >
-                      {isIncome ? '+' : '-'} {formatCurrency(t.amount)}
+                      {isIncome ? '+' : '-'} {formatCurrency(t.amount, currency)}
                     </Text>
                   </View>
                 );

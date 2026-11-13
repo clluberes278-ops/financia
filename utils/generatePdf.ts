@@ -1,6 +1,7 @@
-import { Platform } from 'react-native';
-import * as Print from 'expo-print';
-import { Transaction, CATEGORY_LABELS } from '../types/transaction';
+const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
+
+import { sharePdf } from './fileSharing';
+import { Transaction, CATEGORY_LABELS, Currency } from '../types/transaction';
 import {
   calculateTotalIncome,
   calculateTotalExpenses,
@@ -15,8 +16,10 @@ export async function exportReportAsPdf(
   transactions: Transaction[],
   year: number,
   month: number,
-  periodLabel?: string
+  periodLabel?: string,
+  currency: Currency = 'DOP'
 ): Promise<void> {
+  transactions = transactions.filter(t => t.currency === currency);
   const monthLabel = formatMonthYear(year, month);
   const reportPeriodLabel = periodLabel ?? monthLabel;
   const income = calculateTotalIncome(transactions);
@@ -39,7 +42,7 @@ export async function exportReportAsPdf(
       return `
         <tr>
           <td>${cat.emoji} ${cat.label}</td>
-          <td style="text-align:right; font-weight:700;">${formatCurrency(total)}</td>
+          <td style="text-align:right; font-weight:700;">${formatCurrency(total, currency)}</td>
           <td style="text-align:right;">${pct}%</td>
         </tr>
         <tr>
@@ -175,21 +178,21 @@ export async function exportReportAsPdf(
       <div class="generated">Generado el<br/>${now}</div>
     </div>
     <div class="report-title">Informe Financiero</div>
-    <div class="report-period">Periodo: ${reportPeriodLabel}</div>
+    <div class="report-period">Periodo: ${reportPeriodLabel} · ${currency}</div>
   </div>
 
   <div class="kpi-row">
     <div class="kpi-card">
       <div class="kpi-label">Ingresos</div>
-      <div class="kpi-value" style="color:#10B981;">${formatCurrency(income)}</div>
+      <div class="kpi-value" style="color:#10B981;">${formatCurrency(income, currency)}</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Gastos</div>
-      <div class="kpi-value" style="color:#EF4444;">${formatCurrency(expenses)}</div>
+      <div class="kpi-value" style="color:#EF4444;">${formatCurrency(expenses, currency)}</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Balance neto</div>
-      <div class="kpi-value" style="color:${signColor};">${sign}${formatCurrency(netSavings)}</div>
+      <div class="kpi-value" style="color:${signColor};">${sign}${formatCurrency(netSavings, currency)}</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Tasa de ahorro</div>
@@ -224,9 +227,9 @@ export async function exportReportAsPdf(
           return `<div class="transaction-item">
             <div class="transaction-top">
               <div class="transaction-category">${cat.emoji} ${cat.label}</div>
-              <div class="transaction-amount" style="color:${color};">${prefix} ${formatCurrency(t.amount)}</div>
+              <div class="transaction-amount" style="color:${color};">${prefix} ${formatCurrency(t.amount, currency)}</div>
             </div>
-            <div class="transaction-meta">${formatDate(t.date)}${t.note ? ` · ${t.note}` : ''}</div>
+            <div class="transaction-meta">${formatDate(t.date)}${t.note ? ` · ${escapeHtml(t.note)}` : ''}</div>
           </div>`;
         }).join('')}</div>`}
   </div>
@@ -235,38 +238,5 @@ export async function exportReportAsPdf(
 </body>
 </html>`;
 
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    const win = window.open('', '_blank', 'noopener,noreferrer');
-    if (!win) throw new Error('No se pudo abrir la vista de impresión.');
-    win.document.write(html);
-    win.document.close();
-    win.focus();
-    win.print();
-    return;
-  }
-
-  const { uri } = await Print.printToFileAsync({
-    html,
-    width: 360,
-    height: 800,
-    textZoom: 110,
-    margins: { top: 0, right: 0, bottom: 0, left: 0 },
-    base64: false,
-  });
-
-  if (typeof navigator !== 'undefined' && navigator.userAgent.includes('Expo')) {
-    await Print.printAsync({ uri });
-    return;
-  }
-
-  const sharing = await import('expo-sharing');
-  if (await sharing.isAvailableAsync()) {
-    await sharing.shareAsync(uri, {
-      mimeType: 'application/pdf',
-      dialogTitle: `Informe Financia - ${monthLabel}`,
-      UTI: 'com.adobe.pdf',
-    });
-  } else {
-    await Print.printAsync({ html });
-  }
+  await sharePdf(html, `Informe Financia - ${monthLabel}`);
 }

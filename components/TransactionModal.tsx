@@ -1,6 +1,10 @@
+import { parseMoney } from '../utils/money';
+import CurrencySelector from './CurrencySelector';
+import { useCurrencyStore } from '../store/useCurrencyStore';
 import React, { useState } from 'react';
 import {
   Modal,
+  Alert,
   View,
   Text as NativeText,
   TextInput,
@@ -27,7 +31,7 @@ interface TransactionModalProps {
   initialType?: TransactionType;
 }
 
-const CATEGORIES = Object.keys(CATEGORY_LABELS) as Category[];
+const CATEGORIES = (Object.keys(CATEGORY_LABELS) as Category[]).filter(category => category !== 'ahorro');
 const QUICK_AMOUNTS = [100, 500, 1000, 5000];
 
 export default function TransactionModal({
@@ -35,6 +39,7 @@ export default function TransactionModal({
   onClose,
   initialType = 'gasto',
 }: TransactionModalProps) {
+  const currency = useCurrencyStore(s => s.currency);
   const addTransaction = useTransactionStore((s) => s.addTransaction);
   const accentColor = useSettingsStore((s) => s.accentColor);
   const appTheme = useSettingsStore((s) => s.theme);
@@ -67,12 +72,12 @@ export default function TransactionModal({
   };
 
   const handleAddQuickAmount = (val: number) => {
-    const current = parseFloat(amount.replace(',', '.')) || 0;
+    const current = parseMoney(amount) || 0;
     setAmount((current + val).toString());
   };
 
   const handleSubmit = async () => {
-    const numericAmount = parseFloat(amount.replace(',', '.'));
+    const numericAmount = parseMoney(amount);
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       setAmountError('Ingresa un monto mayor que cero.');
       return;
@@ -84,6 +89,7 @@ export default function TransactionModal({
     try {
       await addTransaction({
         amount: numericAmount,
+        currency,
         type,
         category,
         date: new Date().toISOString(),
@@ -94,6 +100,8 @@ export default function TransactionModal({
       setAmount('');
       setNote('');
       onClose();
+    } catch (error: unknown) {
+      Alert.alert(t('Error'), error instanceof Error ? error.message : t('No se pudo guardar el movimiento. Inténtalo de nuevo.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -165,9 +173,10 @@ export default function TransactionModal({
                 </Pressable>
               </View>
 
+              <CurrencySelector />
               {/* Campo de Monto Principal */}
               <View style={[styles.amountBox, { backgroundColor: theme.surfaceMuted, borderColor: theme.border }]}>
-                <Text style={[styles.currencyPrefix, { color: accentColor }]}>RD$</Text>
+                <Text style={[styles.currencyPrefix, { color: accentColor }]}>{currency}</Text>
                 <TextInput
                   style={[styles.amountInput, { color: theme.text }]}
                   placeholder="0.00"
@@ -181,7 +190,7 @@ export default function TransactionModal({
                     if (amountError) setAmountError('');
                   }}
                   onBlur={() => {
-                    const numericAmount = parseFloat(amount.replace(',', '.'));
+                    const numericAmount = parseMoney(amount);
                     if (amount && (!Number.isFinite(numericAmount) || numericAmount <= 0)) {
                       setAmountError('Ingresa un monto mayor que cero.');
                     }
