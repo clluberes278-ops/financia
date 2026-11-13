@@ -80,14 +80,16 @@ public class FinanceApiTests
         [new Movement("m1", "DOP", amount, "ingreso", "salario", "2026-11-01T12:00:00Z", null, null)], []);
 }
 
-sealed class ApiFactory : WebApplicationFactory<Program>
+sealed class ApiFactory(bool financeV2Enabled = true, string? databasePath = null, bool deleteDatabaseOnDispose = true) : WebApplicationFactory<Program>
 {
-    private readonly string database = Path.Combine(Path.GetTempPath(), $"financia-test-{Guid.NewGuid()}.db");
+    private readonly string database = databasePath ?? Path.Combine(Path.GetTempPath(), $"financia-test-{Guid.NewGuid()}.db");
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.ConfigureLogging(logging => logging.ClearProviders().AddConsole());
         builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?> {
-            ["ConnectionStrings:Sqlite"] = $"Data Source={database};Pooling=False", ["ConnectionStrings:Postgres"] = ""
+            ["ConnectionStrings:Sqlite"] = $"Data Source={database};Pooling=False", ["ConnectionStrings:Postgres"] = "",
+            ["FinanceV2:Enabled"] = financeV2Enabled.ToString()
         }));
         builder.ConfigureTestServices(services => services.AddAuthentication("Test")
             .AddScheme<AuthenticationSchemeOptions, TestAuthentication>("Test", _ => { }));
@@ -95,7 +97,7 @@ sealed class ApiFactory : WebApplicationFactory<Program>
     public override async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
-        File.Delete(database);
+        if (deleteDatabaseOnDispose) File.Delete(database);
     }
 }
 

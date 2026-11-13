@@ -1,4 +1,5 @@
 import type { EmailInput, ParsedTransaction } from './bankEmailParser.ts';
+import { parseBankAmount } from './bankMoney.ts';
 
 const BANK_SENDER_MAP: Array<[RegExp, string]> = [
   [/bhd\.com\.do/i, 'bhd'],
@@ -17,22 +18,19 @@ function detectBank(sender: string): string {
   return domain === 'banco' ? 'banco' : domain.replace(/\./g, '-');
 }
 
-function extractAmount(value: string): number | null {
-  const matches = [
-    /(?:RD\s*\$|RD\$|\$|USD|DOP|USD\s*)\s*([\d]{1,3}(?:[.,][\d]{3})*(?:[.,]\d{2})|[\d]+(?:[.,]\d{2})?)/gi,
-    /(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})|\d+(?:[.,]\d{2})?)/g,
-  ];
-
-  for (const pattern of matches) {
-    const match = pattern.exec(value);
-    if (!match) continue;
-    const candidate = match[1] ?? match[0];
-    const number = candidate.replace(/\./g, '').replace(/,/g, '.');
-    const amount = Number(number);
-    if (Number.isFinite(amount) && amount > 0) return amount;
+function extractAmount(value: string): { amount: number; currency: 'DOP' | 'USD' } | null {
+  // A card number, date or account balance must not become the transaction amount.
+  // Bare "$" is ambiguous until a bank-specific format establishes its currency.
+  const pattern = /(?:^|[^\w])((?:RD|US)\s*\$|USD\b|DOP\b)\s*([+-]?\d[\d.,]*)(?=$|[\s;:!?()<>])/gi;
+  let result: { amount: number; currency: 'DOP' | 'USD' } | null = null;
+  for (const match of value.matchAll(pattern)) {
+    const amount = parseBankAmount(match[2]);
+    if (amount === null) return null;
+    const currency = /^US/i.test(match[1]) ? 'USD' : 'DOP';
+    if (result && (result.amount !== amount || result.currency !== currency)) return null;
+    result = { amount, currency };
   }
-
-  return null;
+  return result;
 }
 
 function extractDate(value: string): string | null {
@@ -80,8 +78,8 @@ export function parseGenericBankEmail(input: EmailInput): ParsedTransaction | nu
   const looksLikeBankAlert = /(transacci[oó]n|compra|purchase|d[eé]bito|cr[eé]dito|transferencia|pago|retiro|cargo|abono|deposito|movimiento)/i.test(haystack);
   if (!looksLikeBankAlert) return null;
 
-  const amount = extractAmount(haystack);
-  if (!amount) return null;
+  const money = extractAmount(haystack);
+  if (!money) return null;
 
   const date = extractDate(haystack) ?? new Date().toISOString();
   const merchant = extractMerchant(haystack);
@@ -96,8 +94,8 @@ export function parseGenericBankEmail(input: EmailInput): ParsedTransaction | nu
 
   return {
     gmailMessageId: input.gmailMessageId,
-    amount,
-    currency: /usd/i.test(haystack) ? 'USD' : 'DOP',
+    amount: money.amount,
+    currency: money.currency,
     type,
     category: 'otros',
     date,
