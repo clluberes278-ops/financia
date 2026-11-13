@@ -17,7 +17,6 @@ Financia es una aplicación de finanzas personales construida con React Native C
 ## Estructura actual
 
 - `App.tsx`: punto de entrada actual y navegación activa con React Navigation.
-- `app/`: wrappers de rutas presentes en el repositorio; no están conectados al punto de entrada actual.
 - `screens/`: pantallas completas agrupadas por función.
 - `components/`: componentes visuales reutilizables.
 - `store/`: estado global con Zustand y persistencia local en AsyncStorage.

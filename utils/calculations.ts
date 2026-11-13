@@ -81,50 +81,6 @@ export function formatMonthYear(year: number, month: number): string {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
-export function getTransactionsByMonth(
-  transactions: Transaction[],
-  year: number,
-  month: number
-): Transaction[] {
-  return transactions.filter((t) => {
-    const d = new Date(t.date);
-    return d.getFullYear() === year && d.getMonth() === month;
-  });
-}
-
-export function getAvailableMonths(
-  transactions: Transaction[]
-): { year: number; month: number; label: string }[] {
-  const current = new Date();
-  const currentEntry = {
-    year: current.getFullYear(),
-    month: current.getMonth(),
-    label: formatMonthYear(current.getFullYear(), current.getMonth()),
-  };
-
-  if (transactions.length === 0) {
-    return [currentEntry];
-  }
-
-  const set = new Map<string, { year: number; month: number; label: string }>();
-  set.set(`${currentEntry.year}-${currentEntry.month}`, currentEntry);
-
-  transactions.forEach((t) => {
-    const d = new Date(t.date);
-    const y = d.getFullYear();
-    const m = d.getMonth();
-    const key = `${y}-${m}`;
-    if (!set.has(key)) {
-      set.set(key, { year: y, month: m, label: formatMonthYear(y, m) });
-    }
-  });
-
-  return Array.from(set.values()).sort((a, b) => {
-    if (a.year !== b.year) return b.year - a.year;
-    return b.month - a.month;
-  });
-}
-
 export function calculateSavingsRate(income: number, expenses: number): number {
   if (income <= 0) return 0;
   const savings = income - expenses;
@@ -132,56 +88,10 @@ export function calculateSavingsRate(income: number, expenses: number): number {
   return Math.round((savings / income) * 100);
 }
 
-export function getDailyAverageExpense(
-  expenses: number,
-  year: number,
-  month: number
-): number {
-  const today = new Date();
-  let days = new Date(year, month + 1, 0).getDate();
-  // Si es el mes en curso, promediar hasta el día de hoy
-  if (today.getFullYear() === year && today.getMonth() === month) {
-    days = Math.max(1, today.getDate());
-  }
-  return expenses / days;
-}
-
 export function getHighestExpense(transactions: Transaction[]): Transaction | null {
   const expenses = transactions.filter((t) => t.type === 'gasto' && t.category !== 'ahorro');
   if (expenses.length === 0) return null;
   return expenses.reduce((max, t) => (t.amount > max.amount ? t : max), expenses[0]);
-}
-
-// ── Chart Data Helpers ────────────────────────────────────────────────────────
-
-/**
- * Returns daily expense totals for the last N days (for bar chart).
- * Each item: { value, label, dayLabel }
- */
-export function getWeeklyExpenses(
-  transactions: Transaction[],
-  days = 7
-): { value: number; label: string; frontColor: string }[] {
-  const result: { value: number; label: string; frontColor: string }[] = [];
-  const today = new Date();
-
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    const dayStr = d.toISOString().split('T')[0];
-
-    const total = transactions
-      .filter((t) => t.type === 'gasto' && t.category !== 'ahorro' && t.date.startsWith(dayStr))
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const dayNames = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'];
-    result.push({
-      value: total,
-      label: dayNames[d.getDay()],
-      frontColor: i === 0 ? '#4F46E5' : '#818CF8',
-    });
-  }
-  return result;
 }
 
 /**

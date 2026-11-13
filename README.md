@@ -68,7 +68,6 @@ Se conservan las claves de AsyncStorage y la separación entre cuentas e invitad
 - `android/`, `ios/`: proyectos nativos propios.
 - `screens/`, `components/`, `store/`, `types/`, `utils/`: aplicación existente.
 - `backend/`: API C# y pruebas de integración.
-- `app/`: wrappers históricos inactivos; no hay otro enrutador.
 
 ## Verificación
 

@@ -8,7 +8,6 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
-  Platform,
   useWindowDimensions,
 } from 'react-native';
 import { PieChart, LineChart } from 'react-native-gifted-charts';

@@ -18,13 +18,10 @@ interface FinanceStore extends FinancialSnapshot {
   error: string | null;
   hasLegacyData: boolean;
   activateOwner: (owner: string) => Promise<void>;
-  loadTransactions: () => Promise<void>;
-  loadPockets: () => Promise<void>;
   addTransaction: (data: Omit<Transaction, 'id' | 'pocketId'>) => Promise<void>;
   importBankTransactions: (data: Transaction[], expectedOwner: string) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   clearAllTransactions: () => Promise<void>;
-  clearAllPockets: () => Promise<void>;
   clearAllData: () => Promise<void>;
   createPocket: (data: NewPocket) => Promise<void>;
   depositToPocket: (id: string, amount: number) => Promise<void>;
@@ -81,8 +78,6 @@ export const useFinanceStore = create<FinanceStore>((set, get) => {
         if (startedEpoch === epoch) set({ error: error instanceof Error ? error.message : 'No se pudo cargar el historial. Vuelve a intentarlo.' });
       }
     },
-    loadTransactions: async () => { if (!get().isLoaded) throw new Error('El historial todavía no está listo.'); },
-    loadPockets: async () => { if (!get().isLoaded) throw new Error('Los bolsillos todavía no están listos.'); },
     addTransaction: async data => {
       assertAmount(data.amount);
       if (!isCurrency(data.currency)) throw new Error('Selecciona DOP o USD.');
@@ -117,12 +112,6 @@ export const useFinanceStore = create<FinanceStore>((set, get) => {
       await mutate(current => {
         if (current.pockets.some(p => p.currentAmount > 0)) throw new Error('Retira el dinero de los bolsillos antes de borrar.');
         return { ...current, transactions: [] };
-      });
-    },
-    clearAllPockets: async () => {
-      await mutate(current => {
-        if (current.pockets.some(p => p.currentAmount > 0)) throw new Error('Retira el dinero de tus bolsillos antes de eliminarlos.');
-        return { ...current, pockets: [] };
       });
     },
     clearAllData: async () => {

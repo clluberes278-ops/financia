@@ -18,4 +18,18 @@
 
 Esta revisión cubre los componentes y contratos indicados; no certifica toda la aplicación. Siguen pendientes las pruebas en dispositivo, OAuth/Gmail reales y PostgreSQL. La migración ya documenta esos límites en `ANDROID_VALIDATION.md`.
 
-La lógica de formularios web/nativo sigue duplicada y puede extraerse en una revisión posterior con pruebas de comportamiento. `loadTransactions` y `loadPockets` solo verifican la carga inicial: aún no ofrecen una recarga explícita de cambios remotos de otro dispositivo. La auditoría de dependencias documentada durante la migración también sigue pendiente.
+La lógica de formularios web/nativo sigue duplicada y puede extraerse en una revisión posterior con pruebas de comportamiento. Aún falta una recarga explícita de cambios remotos de otro dispositivo. La auditoría de dependencias documentada durante la migración también sigue pendiente.
+
+## Limpieza de código sin uso
+
+Se comprobaron los puntos de entrada `index.js`, `index.web.js` y `App.tsx`, las importaciones del código activo, las configuraciones de compilación y las referencias de las pruebas.
+
+- Eliminadas cuatro copias antiguas con una comilla invertida al final del nombre: `TransactionBottomSheet`, `DashboardScreen`, `SavingsScreen` y `TransactionsScreen`. No son módulos resueltos por los puntos de entrada.
+- Eliminados los siete wrappers de `app/`, desconectados de React Navigation; algunos conservaban rutas de importación inválidas. La navegación activa no cambia.
+- Eliminado `TransactionForm.tsx`, sin consumidores. Los formularios utilizados son `TransactionModal` en web y `TransactionBottomSheet` en móvil.
+- Eliminadas cuatro funciones sin consumidores: `getTransactionsByMonth`, `getAvailableMonths`, `getDailyAverageExpense` y `getWeeklyExpenses`.
+- Eliminados tres métodos sin consumidores del almacén: `loadTransactions`, `loadPockets` y `clearAllPockets`. Los dos primeros únicamente comprobaban si había datos cargados; no cargaban datos. La carga efectiva sigue en `activateOwner`.
+- Eliminados los imports sin uso `NativeText` y `Platform` detectados por TypeScript.
+- Activadas las opciones `noUnusedLocals` y `noUnusedParameters` para detectar nuevas declaraciones sin uso en cada verificación. No sustituyen el análisis de módulos o exportaciones desconectados.
+
+Se conservan las variantes `.web`/`.native`, los adaptadores de almacenamiento y las dependencias de compilación/nativas: pueden ser necesarios aunque no exista una importación directa desde una pantalla. No se borraron datos locales ni se modificó la integración remota.

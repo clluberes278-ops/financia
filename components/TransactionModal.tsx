@@ -6,7 +6,6 @@ import {
   Modal,
   Alert,
   View,
-  Text as NativeText,
   TextInput,
   Pressable,
   StyleSheet,
