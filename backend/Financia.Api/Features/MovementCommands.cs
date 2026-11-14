@@ -1,10 +1,5 @@
-using System.Data;
-using System.Globalization;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 using Financia.Api.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,65 +8,110 @@ namespace Financia.Api.Features;
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record CreateMovementRequest(string Id, string Currency, string Amount, string Type,
     string Category, string Date, string? Note = null);
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record UpdateMovementRequest(string ExpectedVersion, string Currency, string Amount, string Type,
+    string Category, string Date, string? Note = null);
 public sealed record CreateMovementResponse(string Revision, V2Movement Movement);
 
-public static partial class MovementCommands
+public static class MovementCommands
 {
-    private const string Operation = "movement.create";
-
-    public static void MapMovementCommands(this RouteGroupBuilder routes) => routes.MapPost("/movements", Create);
-
-    private static async Task<IResult> Create(CreateMovementRequest request, HttpRequest http,
-        ClaimsPrincipal user, NormalizedFinanceDb db, CancellationToken ct)
+    public static void MapMovementCommands(this RouteGroupBuilder routes)
     {
-        var key = NormalizedFinances.IdempotencyKey(http);
-        if (key is null) return Results.BadRequest(new { error = "Envía una Idempotency-Key única de hasta 128 caracteres." });
-        if (request.Amount is null || !DecimalAmount().IsMatch(request.Amount)
-            || !decimal.TryParse(request.Amount, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var amount))
-            return Results.BadRequest(new { error = "El importe debe ser una cadena decimal positiva, sin separador de miles y con un máximo de dos decimales." });
-        var movement = new Movement(request.Id, request.Currency, amount, request.Type, request.Category, request.Date, request.Note, null);
-        var validation = new FinancialSnapshot(1, [movement], []).Validate();
-        if (validation is not null) return Results.BadRequest(new { error = validation });
-        if (!NormalizedFinances.TryUtc(request.Date, out var occurredAt))
-            return Results.BadRequest(new { error = "La fecha debe ser válida e incluir una zona horaria explícita." });
-        var owner = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var hash = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(request, FinanceDb.JsonOptions)));
-        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-        var receipt = await db.Receipts.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == owner && x.Key == key, ct);
-        if (receipt is not null)
-        {
-            if (receipt.Operation != Operation || receipt.RequestHash != hash)
-                return Results.Conflict(new { error = "Esta clave de idempotencia ya se utilizó para otra solicitud." });
-            await transaction.CommitAsync(ct);
-            return Results.Content(receipt.ResponseJson, "application/json", statusCode: receipt.StatusCode);
-        }
-        var account = await db.Accounts.SingleOrDefaultAsync(x => x.UserId == owner, ct);
-        if (account is null)
-            return Results.Conflict(new { error = "Primero inicializa o importa esta cuenta mediante /api/v2/imports/legacy." });
-        if (account.ImportKey == key)
-            return Results.Conflict(new { error = "Esta clave ya se utilizó para importar el historial." });
-        if (account.Revision == long.MaxValue)
-            return Results.Conflict(new { error = "La revisión de la cuenta alcanzó el límite admitido." });
-        if (await db.Movements.AsNoTracking().AnyAsync(x => x.UserId == owner && x.Id == request.Id, ct))
-            return Results.Conflict(new { error = "Ya existe un movimiento con ese identificador." });
-        // Upgrade accounts imported before receipts existed, while their original state is still intact.
-        account.ImportResponseJson ??= JsonSerializer.Serialize(await NormalizedFinances.Read(db, owner, ct), FinanceDb.JsonOptions);
-        account.Revision++;
-        var entity = new NormalizedMovement { UserId = owner, Id = movement.Id, Currency = movement.Currency,
-            Amount = amount, Type = movement.Type, Category = movement.Category, Note = movement.Note,
-            OccurredAt = occurredAt, Version = 1 };
-        db.Movements.Add(entity);
-        var response = new CreateMovementResponse(account.Revision.ToString(CultureInfo.InvariantCulture), NormalizedFinances.ToResponse(entity));
-        var json = JsonSerializer.Serialize(response, FinanceDb.JsonOptions);
-        var now = DateTime.UtcNow;
-        db.Receipts.Add(new CommandReceipt { UserId = owner, Key = key, Operation = Operation, RequestHash = hash,
-            ResponseJson = json, StatusCode = StatusCodes.Status201Created, CreatedAt = now });
-        db.Outbox.Add(new FinanceOutbox { EventId = Guid.NewGuid(), UserId = owner, Revision = account.Revision, CreatedAt = now });
-        await db.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
-        return Results.Content(json, "application/json", statusCode: StatusCodes.Status201Created);
+        routes.MapPost("/movements", Create);
+        routes.MapPatch("/movements/{id}", Update);
+        routes.MapDelete("/movements/{id}", Delete);
     }
 
-    [GeneratedRegex(@"^\d+(?:\.\d{1,2})?$", RegexOptions.CultureInvariant)]
-    private static partial Regex DecimalAmount();
+    private static string? Validate(CreateMovementRequest request, out decimal amount, out DateTime occurredAt)
+    {
+        occurredAt = default;
+        if (!FinanceCommands.TryAmount(request.Amount, out amount))
+            return "El importe debe ser una cadena decimal positiva con un máximo de dos decimales, sin separador de miles.";
+        var movement = new Movement(request.Id, request.Currency, amount, request.Type, request.Category, request.Date, request.Note, null);
+        var validation = new FinancialSnapshot(1, [movement], []).Validate();
+        if (validation is not null) return validation;
+        if (request.Category == "ahorro") return "Usa los comandos del bolsillo para registrar transferencias de ahorro.";
+        return NormalizedFinances.TryUtc(request.Date, out occurredAt) ? null : "La fecha debe ser válida e incluir una zona horaria explícita.";
+    }
+
+    private static Task<IResult> Create(CreateMovementRequest request, HttpRequest http, ClaimsPrincipal user, NormalizedFinanceDb db, CancellationToken ct)
+    {
+        var error = Validate(request, out var amount, out var occurredAt);
+        if (error is not null) return Task.FromResult<IResult>(Results.BadRequest(new { error }));
+        return FinanceCommands.Execute(request, http, user, db, "movement.create", async context => {
+            if (await db.Movements.AsNoTracking().AnyAsync(x => x.UserId == context.UserId && x.Id == request.Id, ct))
+                return new(409, new { error = "Ya existe un movimiento con ese identificador." });
+            var entity = new NormalizedMovement { UserId = context.UserId, Id = request.Id, Currency = request.Currency,
+                Amount = amount, Type = request.Type, Category = request.Category, Note = request.Note, OccurredAt = occurredAt, Version = 1 };
+            if (!await PreservesSavings(db, context.UserId, null, entity, ct))
+                return new(409, new { error = "La operación dejaría sin respaldo el dinero reservado en bolsillos." });
+            db.Movements.Add(entity);
+            return new(201, new CreateMovementResponse(context.Revision, NormalizedFinances.ToResponse(entity)));
+        }, ct);
+    }
+
+    private static Task<IResult> Update(string id, UpdateMovementRequest request, HttpRequest http, ClaimsPrincipal user, NormalizedFinanceDb db, CancellationToken ct)
+    {
+        if (!FinanceCommands.TryVersion(request.ExpectedVersion, out var expected))
+            return Task.FromResult<IResult>(Results.BadRequest(new { error = "expectedVersion debe ser un entero positivo." }));
+        var error = Validate(new(id, request.Currency, request.Amount, request.Type, request.Category, request.Date, request.Note), out var amount, out var occurredAt);
+        if (error is not null) return Task.FromResult<IResult>(Results.BadRequest(new { error }));
+        return FinanceCommands.Execute(new { id, request }, http, user, db, "movement.update", async context => {
+            var entity = await db.Movements.SingleOrDefaultAsync(x => x.UserId == context.UserId && x.Id == id && x.DeletedAt == null, ct);
+            var invalid = CanModify(entity, expected);
+            if (invalid is not null) return invalid;
+            var replacement = new NormalizedMovement { UserId = context.UserId, Id = id, Currency = request.Currency,
+                Amount = amount, Type = request.Type, Category = request.Category, Note = request.Note, OccurredAt = occurredAt, Version = entity!.Version + 1 };
+            if (!await PreservesSavings(db, context.UserId, entity, replacement, ct))
+                return new(409, new { error = "La edición dejaría sin respaldo el dinero reservado en bolsillos." });
+            entity!.Currency = replacement.Currency; entity.Amount = replacement.Amount; entity.Type = replacement.Type;
+            entity.Category = replacement.Category; entity.Note = replacement.Note; entity.OccurredAt = replacement.OccurredAt;
+            entity.Version++;
+            return new(200, new CreateMovementResponse(context.Revision, NormalizedFinances.ToResponse(entity)));
+        }, ct);
+    }
+
+    private static Task<IResult> Delete(string id, string? expectedVersion, HttpRequest http, ClaimsPrincipal user, NormalizedFinanceDb db, CancellationToken ct)
+    {
+        if (!FinanceCommands.TryVersion(expectedVersion, out var expected))
+            return Task.FromResult<IResult>(Results.BadRequest(new { error = "expectedVersion debe ser un entero positivo." }));
+        return FinanceCommands.Execute(new { id, expectedVersion }, http, user, db, "movement.delete", async context => {
+            var entity = await db.Movements.SingleOrDefaultAsync(x => x.UserId == context.UserId && x.Id == id && x.DeletedAt == null, ct);
+            var invalid = CanModify(entity, expected);
+            if (invalid is not null) return invalid;
+            if (!await PreservesSavings(db, context.UserId, entity, null, ct))
+                return new(409, new { error = "La eliminación dejaría sin respaldo el dinero reservado en bolsillos." });
+            entity!.DeletedAt = context.Now;
+            entity.Version++;
+            return new(200, new { revision = context.Revision, id, version = FinanceCommands.Number(entity.Version), deleted = true });
+        }, ct);
+    }
+
+    private static CommandOutcome? CanModify(NormalizedMovement? entity, long expected)
+    {
+        if (entity is null) return new(404, new { error = "El movimiento no existe." });
+        if (entity.PocketId is not null || entity.Category == "ahorro") return new(409, new { error = "Las transferencias se revierten desde el bolsillo." });
+        if (entity.Version != expected || entity.Version == long.MaxValue) return new(409, new { error = "El movimiento cambió. Recarga antes de continuar." });
+        return null;
+    }
+
+    private static async Task<bool> PreservesSavings(NormalizedFinanceDb db, Guid owner,
+        NormalizedMovement? previous, NormalizedMovement? next, CancellationToken ct)
+    {
+        var currencies = await db.Pockets.AsNoTracking().Where(p => p.UserId == owner && p.ClosedAt == null && p.CurrentAmount > 0)
+            .Select(p => p.Currency).Distinct().ToArrayAsync(ct);
+        foreach (var currency in currencies)
+        {
+            var delta = Contribution(next, currency) - Contribution(previous, currency);
+            if (delta >= 0) continue;
+            var values = await db.Movements.AsNoTracking().Where(m => m.UserId == owner && m.Currency == currency && m.DeletedAt == null)
+                .Select(m => new { m.Type, m.Amount }).ToArrayAsync(ct);
+            var available = values.Sum(m => m.Type == "ingreso" ? m.Amount : -m.Amount);
+            if (available + delta < Math.Min(available, 0m)) return false;
+        }
+        return true;
+    }
+
+    private static decimal Contribution(NormalizedMovement? movement, string currency) =>
+        movement is null || movement.Currency != currency ? 0 : movement.Type == "ingreso" ? movement.Amount : -movement.Amount;
 }

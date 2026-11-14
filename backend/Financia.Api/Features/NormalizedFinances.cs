@@ -67,6 +67,7 @@ public static class NormalizedFinances
         });
         routes.MapPost("/imports/legacy", Import);
         routes.MapMovementCommands();
+        routes.MapPocketCommands();
     }
 
     public static bool IsWriteConflict(Exception error) => error switch {
@@ -85,6 +86,9 @@ public static class NormalizedFinances
     internal static V2Movement ToResponse(NormalizedMovement m) => new(m.Id, m.Currency, Money(m.Amount), m.Type, m.Category,
         Timestamp(m.OccurredAt), m.Note, m.PocketId, Number(m.Version));
 
+    internal static V2Pocket ToResponse(NormalizedPocket p) => new(p.Id, p.Name, p.Currency, Money(p.TargetAmount), Money(p.CurrentAmount),
+        p.Emoji, Timestamp(p.CreatedAt), p.Color, Number(p.Version));
+
     internal static string? IdempotencyKey(HttpRequest http)
     {
         var values = http.Headers["Idempotency-Key"];
@@ -96,12 +100,11 @@ public static class NormalizedFinances
     {
         var account = await db.Accounts.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == owner, ct);
         if (account is null) return new("0", new(2, [], []));
-        var movements = await db.Movements.AsNoTracking().Where(x => x.UserId == owner).OrderBy(x => x.Id).ToArrayAsync(ct);
-        var pockets = await db.Pockets.AsNoTracking().Where(x => x.UserId == owner).OrderBy(x => x.Id).ToArrayAsync(ct);
+        var movements = await db.Movements.AsNoTracking().Where(x => x.UserId == owner && x.DeletedAt == null).OrderBy(x => x.Id).ToArrayAsync(ct);
+        var pockets = await db.Pockets.AsNoTracking().Where(x => x.UserId == owner && x.ClosedAt == null).OrderBy(x => x.Id).ToArrayAsync(ct);
         return new(Number(account.Revision), new(2,
             movements.Select(ToResponse).ToArray(),
-            pockets.Select(p => new V2Pocket(p.Id, p.Name, p.Currency, Money(p.TargetAmount), Money(p.CurrentAmount),
-                p.Emoji, Timestamp(p.CreatedAt), p.Color, Number(p.Version))).ToArray()));
+            pockets.Select(ToResponse).ToArray()));
     }
 
     private static async Task<IResult> Import(ImportLegacyRequest request, HttpRequest http,

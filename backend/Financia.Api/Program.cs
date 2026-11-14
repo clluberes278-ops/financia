@@ -26,7 +26,7 @@ if (NormalizedFinances.Enabled(builder.Configuration) && !builder.Environment.Is
 builder.Services.AddCors(options => {
     var origins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? [];
     options.AddDefaultPolicy(policy => {
-        if (origins.Length > 0) policy.WithOrigins(origins).AllowAnyHeader().WithMethods("GET", "PUT", "POST");
+        if (origins.Length > 0) policy.WithOrigins(origins).AllowAnyHeader().WithMethods("GET", "PUT", "POST", "PATCH", "DELETE");
     });
     options.AddPolicy("Realtime", policy => {
         if (origins.Length > 0) policy.WithOrigins(origins).AllowAnyHeader().WithMethods("GET", "POST", "DELETE").AllowCredentials();

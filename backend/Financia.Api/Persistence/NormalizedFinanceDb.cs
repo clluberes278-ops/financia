@@ -44,6 +44,7 @@ public sealed class NormalizedPocket
     public string? Color { get; set; }
     public DateTime CreatedAt { get; set; }
     public long Version { get; set; }
+    public DateTime? ClosedAt { get; set; }
 }
 
 public sealed class NormalizedMovement
@@ -58,6 +59,7 @@ public sealed class NormalizedMovement
     public string? Note { get; set; }
     public string? PocketId { get; set; }
     public long Version { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }
 
 public sealed class NormalizedFinanceDb(DbContextOptions<NormalizedFinanceDb> options) : DbContext(options)
@@ -76,5 +78,6 @@ public sealed class NormalizedFinanceDb(DbContextOptions<NormalizedFinanceDb> op
     {
         InitialNormalizedModel.Configure(builder);
         MovementCommandsModel.Configure(builder);
+        FinanceLifecycleModel.Configure(builder);
     }
 }

@@ -40,6 +40,6 @@ El esquema inicial se crea en desarrollo. En producción ejecuta `dotnet run --p
 
 ## Pruebas
 
-La arquitectura compartida se documenta en [API v2](V2.md). Incluye tablas normalizadas, migraciones, importación transaccional, lectura, creación de movimientos y avisos SignalR con outbox; está desactivada por defecto. La app actual sigue usando el contrato anterior.
+La arquitectura compartida se documenta en [API v2](V2.md). Incluye tablas normalizadas, migraciones, importación, lectura, creación/edición/eliminación de movimientos, operaciones de bolsillos y avisos SignalR con outbox; está desactivada por defecto. Consulta el [contrato de operaciones financieras](LIFECYCLE.md). La app actual sigue usando el contrato anterior.
 
 `npm run api:test`: pruebas HTTP con SQLite temporal y autenticación ficticia exclusivamente en el proyecto de pruebas. Verifican aislamiento, rechazo de anónimos, conflictos y validación sin alterar datos reales. La autenticación real de Google/Apple/Gmail y PostgreSQL requieren verificación en el entorno configurado.
