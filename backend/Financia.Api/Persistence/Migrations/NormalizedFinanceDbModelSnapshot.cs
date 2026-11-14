@@ -9,6 +9,6 @@ public sealed class NormalizedFinanceDbModelSnapshot : ModelSnapshot
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
         modelBuilder.HasAnnotation("ProductVersion", "10.0.15");
-        InitialNormalizedSnapshotModel.Configure(modelBuilder);
+        MovementCommandsSnapshotModel.Configure(modelBuilder);
     }
 }

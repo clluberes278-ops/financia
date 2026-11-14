@@ -66,6 +66,7 @@ public static class NormalizedFinances
             return Results.Ok(result);
         });
         routes.MapPost("/imports/legacy", Import);
+        routes.MapMovementCommands();
     }
 
     public static bool IsWriteConflict(Exception error) => error switch {
@@ -81,15 +82,24 @@ public static class NormalizedFinances
     // SQLite drops DateTime.Kind on reads; all persisted timestamps are UTC.
     private static string Timestamp(DateTime value) => DateTime.SpecifyKind(value, DateTimeKind.Utc).ToString("O", CultureInfo.InvariantCulture);
 
-    private static async Task<V2FinanceResponse> Read(NormalizedFinanceDb db, Guid owner, CancellationToken ct)
+    internal static V2Movement ToResponse(NormalizedMovement m) => new(m.Id, m.Currency, Money(m.Amount), m.Type, m.Category,
+        Timestamp(m.OccurredAt), m.Note, m.PocketId, Number(m.Version));
+
+    internal static string? IdempotencyKey(HttpRequest http)
+    {
+        var values = http.Headers["Idempotency-Key"];
+        var key = values.ToString();
+        return values.Count == 1 && !string.IsNullOrWhiteSpace(key) && key.Length <= 128 && key.Trim() == key ? key : null;
+    }
+
+    internal static async Task<V2FinanceResponse> Read(NormalizedFinanceDb db, Guid owner, CancellationToken ct)
     {
         var account = await db.Accounts.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == owner, ct);
         if (account is null) return new("0", new(2, [], []));
         var movements = await db.Movements.AsNoTracking().Where(x => x.UserId == owner).OrderBy(x => x.Id).ToArrayAsync(ct);
         var pockets = await db.Pockets.AsNoTracking().Where(x => x.UserId == owner).OrderBy(x => x.Id).ToArrayAsync(ct);
         return new(Number(account.Revision), new(2,
-            movements.Select(m => new V2Movement(m.Id, m.Currency, Money(m.Amount), m.Type, m.Category,
-                Timestamp(m.OccurredAt), m.Note, m.PocketId, Number(m.Version))).ToArray(),
+            movements.Select(ToResponse).ToArray(),
             pockets.Select(p => new V2Pocket(p.Id, p.Name, p.Currency, Money(p.TargetAmount), Money(p.CurrentAmount),
                 p.Emoji, Timestamp(p.CreatedAt), p.Color, Number(p.Version))).ToArray()));
     }
@@ -97,9 +107,8 @@ public static class NormalizedFinances
     private static async Task<IResult> Import(ImportLegacyRequest request, HttpRequest http,
         ClaimsPrincipal user, NormalizedFinanceDb db, CancellationToken ct)
     {
-        var keys = http.Headers["Idempotency-Key"];
-        var key = keys.ToString();
-        if (keys.Count != 1 || string.IsNullOrWhiteSpace(key) || key.Length > 128 || key.Trim() != key)
+        var key = IdempotencyKey(http);
+        if (key is null)
             return Results.BadRequest(new { error = "Envía una Idempotency-Key única de hasta 128 caracteres." });
         if (request.ExpectedRevision != "0")
             return Results.Conflict(new { error = "La importación requiere una cuenta v2 vacía (expectedRevision: 0)." });
@@ -111,9 +120,10 @@ public static class NormalizedFinances
         {
             if (existing.ImportKey != key || existing.ImportHash != hash)
                 return Results.Conflict(new { error = "La cuenta ya fue importada o la clave corresponde a otra solicitud." });
-            var previous = await Read(db, owner, ct);
+            // Preserve the original response even after newer movements have been written.
+            var previousJson = existing.ImportResponseJson ?? JsonSerializer.Serialize(await Read(db, owner, ct), FinanceDb.JsonOptions);
             await transaction.CommitAsync(ct);
-            return Results.Ok(previous);
+            return Results.Content(previousJson, "application/json");
         }
         var original = await db.LegacyDocuments.AsNoTracking().SingleOrDefaultAsync(x => x.OwnerId == owner, ct);
         LegacySnapshot? snapshot;
@@ -163,11 +173,15 @@ public static class NormalizedFinances
         }));
         await db.SaveChangesAsync(ct);
         var response = await Read(db, owner, ct);
+        var account = await db.Accounts.SingleAsync(x => x.UserId == owner, ct);
+        account.ImportResponseJson = JsonSerializer.Serialize(response, FinanceDb.JsonOptions);
+        db.Outbox.Add(new FinanceOutbox { EventId = Guid.NewGuid(), UserId = owner, Revision = 1, CreatedAt = DateTime.UtcNow });
+        await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
         return Results.Ok(response);
     }
 
-    private static bool TryUtc(string value, out DateTime utc)
+    internal static bool TryUtc(string value, out DateTime utc)
     {
         utc = default;
         // Avoid interpreting zone-less historical dates in the server's local time zone.

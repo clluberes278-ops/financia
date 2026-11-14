@@ -2,7 +2,7 @@
 
 Estado: plan de implementación. Esta documentación no mueve archivos, no migra datos ni cambia la aplicación activa.
 
-Primera etapa implementada: esquema normalizado con migraciones EF, importación explícita y lectura v2, desactivadas por defecto. Consulta [API v2](../../backend/V2.md) para distinguir lo disponible del objetivo descrito a continuación. Ninguna cuenta real se ha migrado.
+Implementado: esquema normalizado con migraciones EF, importación/lectura v2, creación de ingresos y gastos, recibos idempotentes y notificaciones SignalR con outbox. Desactivado por defecto. Consulta [API v2](../../backend/V2.md) para distinguir lo disponible del objetivo descrito a continuación. Ninguna cuenta real se ha migrado; la app sigue usando v1 y los nuevos clientes aún están pendientes.
 
 El modelo y los endpoints propuestos están en [Contrato inicial del backend](backend-contract.md). Deben implementarse y validarse antes de considerarlos disponibles.
 

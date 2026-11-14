@@ -15,7 +15,11 @@ public sealed class SessionAuthentication(IOptionsMonitor<AuthenticationSchemeOp
 {
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        if (!AuthenticationHeaderValue.TryParse(Request.Headers.Authorization, out var header)
+        var authorization = Request.Headers.Authorization.ToString();
+        if (string.IsNullOrEmpty(authorization) && HttpMethods.IsGet(Request.Method)
+            && Request.Path.Equals("/hubs/finances") && Request.Query["access_token"].Count == 1)
+            authorization = "Bearer " + Request.Query["access_token"].ToString();
+        if (!AuthenticationHeaderValue.TryParse(authorization, out var header)
             || !header.Scheme.Equals("Bearer", StringComparison.OrdinalIgnoreCase)
             || string.IsNullOrWhiteSpace(header.Parameter)) return AuthenticateResult.NoResult();
         var baseUrl = config["Authentication:SupabaseUrl"];
@@ -35,13 +39,37 @@ public sealed class SessionAuthentication(IOptionsMonitor<AuthenticationSchemeOp
             if (!json.RootElement.TryGetProperty("id", out var id) || !Guid.TryParse(id.GetString(), out var owner))
                 return AuthenticateResult.Fail("La sesión no tiene un usuario válido.");
             var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, owner.ToString())], Scheme.Name));
-            return AuthenticateResult.Success(new AuthenticationTicket(principal, Scheme.Name));
+            // Only read expiry after the identity service has validated this token.
+            // The claim is used to close persistent connections, never to authenticate a token offline.
+            var expires = ReadExpiry(header.Parameter);
+            if (expires is not null && expires <= DateTimeOffset.UtcNow)
+                return AuthenticateResult.Fail("La sesión venció.");
+            var properties = new AuthenticationProperties { ExpiresUtc = expires ?? DateTimeOffset.UtcNow.AddMinutes(5) };
+            return AuthenticateResult.Success(new AuthenticationTicket(principal, properties, Scheme.Name));
         }
         catch (Exception error) when (error is HttpRequestException or TaskCanceledException or JsonException)
         {
             // No token, response body or financial information is logged.
             Logger.LogWarning("El proveedor de identidad no pudo validar la sesión.");
             return AuthenticateResult.Fail("No se pudo validar la sesión. Inténtalo de nuevo.");
+        }
+    }
+
+    private static DateTimeOffset? ReadExpiry(string token)
+    {
+        if (token.Length > 16384) return null;
+        var parts = token.Split('.');
+        if (parts.Length != 3) return null;
+        try
+        {
+            var payload = parts[1].Replace('-', '+').Replace('_', '/');
+            using var json = JsonDocument.Parse(Convert.FromBase64String(payload.PadRight((payload.Length + 3) / 4 * 4, '=')));
+            return json.RootElement.TryGetProperty("exp", out var exp) && exp.TryGetInt64(out var seconds)
+                ? DateTimeOffset.FromUnixTimeSeconds(seconds) : null;
+        }
+        catch (Exception error) when (error is FormatException or JsonException or ArgumentOutOfRangeException or InvalidOperationException)
+        {
+            return null;
         }
     }
     protected override Task HandleChallengeAsync(AuthenticationProperties properties)

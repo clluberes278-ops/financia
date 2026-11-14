@@ -9,6 +9,27 @@ public sealed class FinanceAccount
     public string ImportKey { get; set; } = "";
     public string ImportHash { get; set; } = "";
     public long? LegacyRevision { get; set; }
+    public string? ImportResponseJson { get; set; }
+}
+
+public sealed class CommandReceipt
+{
+    public Guid UserId { get; set; }
+    public string Key { get; set; } = "";
+    public string Operation { get; set; } = "";
+    public string RequestHash { get; set; } = "";
+    public string ResponseJson { get; set; } = "";
+    public int StatusCode { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public sealed class FinanceOutbox
+{
+    public Guid EventId { get; set; }
+    public Guid UserId { get; set; }
+    public long Revision { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? PublishedAt { get; set; }
 }
 
 public sealed class NormalizedPocket
@@ -48,6 +69,12 @@ public sealed class NormalizedFinanceDb(DbContextOptions<NormalizedFinanceDb> op
     public DbSet<NormalizedPocket> Pockets => Set<NormalizedPocket>();
     public DbSet<NormalizedMovement> Movements => Set<NormalizedMovement>();
     public DbSet<FinanceDocument> LegacyDocuments => Set<FinanceDocument>();
+    public DbSet<CommandReceipt> Receipts => Set<CommandReceipt>();
+    public DbSet<FinanceOutbox> Outbox => Set<FinanceOutbox>();
 
-    protected override void OnModelCreating(ModelBuilder builder) => InitialNormalizedModel.Configure(builder);
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        InitialNormalizedModel.Configure(builder);
+        MovementCommandsModel.Configure(builder);
+    }
 }

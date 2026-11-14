@@ -2,7 +2,7 @@
 
 Estado: diseño inicial para implementar. No modifica la base ni los endpoints actuales.
 
-Actualización de la primera etapa: las tablas de cuentas, bolsillos y movimientos, junto con importación y lectura v2, ya están implementadas detrás de una bandera desactivada por defecto. Consulta [el estado implementado y sus comandos](../../backend/V2.md). Los demás endpoints, recibos generales, outbox y SignalR de este documento siguen siendo objetivos de las siguientes etapas.
+Estado implementado: tablas normalizadas, importación/lectura v2, creación de movimientos, recibos, outbox y hub SignalR, detrás de una bandera desactivada por defecto. Consulta [el estado implementado y sus comandos](../../backend/V2.md). Edición/eliminación, comandos de bolsillos y clientes compartidos siguen siendo objetivos de las siguientes etapas.
 
 ## Decisiones
 

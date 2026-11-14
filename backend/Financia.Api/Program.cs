@@ -4,19 +4,34 @@ using System.Text.Json;
 using Financia.Api;
 using Financia.Api.Features;
 using Financia.Api.Persistence;
+using Financia.Api.Realtime;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddProblemDetails();
+// Browser WebSocket/SSE authentication carries access_token in the query string.
+// Do not send full request URLs to the default hosting request logger.
+builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
 builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 16 * 1024 * 1024);
 builder.Services.AddHttpClient("identity", client => client.Timeout = TimeSpan.FromSeconds(15));
 builder.Services.AddAuthentication("Session").AddScheme<AuthenticationSchemeOptions, SessionAuthentication>("Session", _ => { });
 builder.Services.AddAuthorization();
-builder.Services.AddCors(options => options.AddDefaultPolicy(policy => {
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IUserIdProvider, FinanceUserIdProvider>();
+builder.Services.AddScoped<FinanceOutboxPublisher>();
+if (NormalizedFinances.Enabled(builder.Configuration) && !builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddHostedService<FinanceOutboxWorker>();
+builder.Services.AddCors(options => {
     var origins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? [];
-    if (origins.Length > 0) policy.WithOrigins(origins).AllowAnyHeader().WithMethods("GET", "PUT", "POST");
-}));
+    options.AddDefaultPolicy(policy => {
+        if (origins.Length > 0) policy.WithOrigins(origins).AllowAnyHeader().WithMethods("GET", "PUT", "POST");
+    });
+    options.AddPolicy("Realtime", policy => {
+        if (origins.Length > 0) policy.WithOrigins(origins).AllowAnyHeader().WithMethods("GET", "POST", "DELETE").AllowCredentials();
+    });
+});
 builder.Services.AddDbContext<FinanceDb>(options => {
     var postgres = builder.Configuration.GetConnectionString("Postgres");
     if (!string.IsNullOrWhiteSpace(postgres)) options.UseNpgsql(postgres);
@@ -33,6 +48,19 @@ var app = builder.Build();
 app.UseExceptionHandler();
 if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing")) app.UseHttpsRedirection();
 app.UseCors();
+app.Use(async (context, next) => {
+    // WebSockets do not enforce CORS. Native clients may omit Origin; browsers may not choose an arbitrary origin.
+    if (context.Request.Path.Equals("/hubs/finances") && context.Request.Headers.ContainsKey("Origin"))
+    {
+        var origins = app.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? [];
+        if (context.Request.Headers.Origin.Count != 1 || !origins.Contains(context.Request.Headers.Origin.ToString(), StringComparer.Ordinal))
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return;
+        }
+    }
+    await next(context);
+});
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -99,6 +127,10 @@ api.MapPut("/finances", async (SaveFinanceRequest request, ClaimsPrincipal user,
     if (transaction is not null) await transaction.CommitAsync(ct);
     return Results.Ok(new FinanceResponse(row.Revision, request.Snapshot));
 });
-if (NormalizedFinances.Enabled(app.Configuration)) app.MapNormalizedFinances();
+if (NormalizedFinances.Enabled(app.Configuration))
+{
+    app.MapNormalizedFinances();
+    app.MapHub<FinanceHub>("/hubs/finances", options => options.CloseOnAuthenticationExpiration = true).RequireCors("Realtime");
+}
 app.Run();
 public partial class Program { }
