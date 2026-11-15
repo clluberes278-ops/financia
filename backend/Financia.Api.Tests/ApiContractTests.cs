@@ -22,13 +22,13 @@ public sealed class ApiContractTests
         Assert.Equal(FinanceApiContract.Operations.Count, endpoints.Length);
         foreach (var operation in FinanceApiContract.Operations)
         {
-            var endpoint = Assert.Single(endpoints.Where(endpoint => endpoint.RoutePattern.RawText == operation.Path
-                && endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Contains(operation.Method)));
+            var endpoint = Assert.Single(endpoints, endpoint => endpoint.RoutePattern.RawText == operation.Path
+                && endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Contains(operation.Method));
             Assert.Equal(operation.OperationId, endpoint.Metadata.GetMetadata<IEndpointNameMetadata>()!.EndpointName);
-            var produced = Assert.Single(endpoint.Metadata.GetOrderedMetadata<IProducesResponseTypeMetadata>()
-                .Where(metadata => metadata.StatusCode == operation.SuccessStatus));
+            var produced = Assert.Single(endpoint.Metadata.GetOrderedMetadata<IProducesResponseTypeMetadata>(),
+                metadata => metadata.StatusCode == operation.SuccessStatus);
             Assert.Equal(operation.Response, produced.Type);
-            Assert.Contains("application/json", produced.ContentType!);
+            Assert.Contains("application/json", produced.ContentTypes);
             var method = endpoint.Metadata.GetMetadata<MethodInfo>();
             Assert.NotNull(method);
             if (operation.Request is not null)

@@ -126,7 +126,11 @@ public static class FinanceApiContract
                 if (propertyType == typeof(string)) propertySchema["pattern"] = "^[0-9]+(?:\\.[0-9]{1,2})?$";
                 else { propertySchema["minimum"] = name == "currentAmount" ? 0 : 0.01m; propertySchema["maximum"] = 999999999999.99m; }
                 propertySchema["description"] = "Decimal amount, at most two fractional digits; maximum 999999999999.99. Zero is allowed only for currentAmount.";
+                if (dto == typeof(V2Movement) || dto == typeof(V2Pocket))
+                    propertySchema["pattern"] = (name == "currentAmount" ? "^" : "^(?!0\\.00$)") + "(?:0|[1-9][0-9]{0,11})\\.[0-9]{2}$";
             }
+            if ((dto == typeof(V2Movement) && name == "date") || (dto == typeof(V2Pocket) && name == "createdAt"))
+                propertySchema["format"] = "date-time";
             if (propertyType == typeof(string) && name is "revision" or "version" or "expectedVersion" or "legacyRevision")
                 propertySchema["pattern"] = "^[0-9]+$";
             if (name == "expectedRevision") propertySchema["const"] = "0";

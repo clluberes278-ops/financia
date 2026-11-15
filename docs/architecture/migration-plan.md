@@ -2,9 +2,11 @@
 
 Estado: plan de implementación. Esta documentación no mueve archivos, no migra datos ni cambia la aplicación activa.
 
-Implementado: esquema normalizado con migraciones EF, importación/lectura v2, creación/edición/eliminación de movimientos, creación/edición/abonos/retiros/cierre de bolsillos, recibos idempotentes y notificaciones SignalR con outbox. Desactivado por defecto. Consulta [API v2](../../backend/V2.md) para distinguir lo disponible del objetivo descrito a continuación. Ninguna cuenta real se ha migrado; la app sigue usando v1 y el siguiente paso es el contrato y cliente compartido.
+Implementado: esquema normalizado con migraciones EF, importación/lectura v2, creación/edición/eliminación de movimientos, creación/edición/abonos/retiros/cierre de bolsillos, recibos idempotentes y notificaciones SignalR con outbox. Desactivado por defecto. Consulta [API v2](../../backend/V2.md) para distinguir lo disponible del objetivo descrito a continuación. Ninguna cuenta real se ha migrado; la app sigue usando v1 y el siguiente paso es integrar el cliente compartido con las interfaces.
 
-El modelo y los endpoints propuestos están en [Contrato inicial del backend](backend-contract.md). Deben implementarse y validarse antes de considerarlos disponibles.
+El [cliente HTTP compartido](../../packages/api-client/README.md) ya existe como npm workspace: contrato OpenAPI generado desde C#, tipos, validación y manejo de sesiones/errores. El siguiente paso es integrarlo con el móvil y la web, además de la suscripción SignalR y recuperación del estado. `packages/domain` y el traslado físico de los clientes siguen pendientes.
+
+El contrato y los endpoints están descritos en [Contrato inicial del backend](backend-contract.md); el estado implementado se detalla en los documentos del backend y del cliente compartido.
 
 ## Resultado objetivo
 

@@ -10,7 +10,7 @@ const createConfig = require('../webpack.config');
 const root = path.resolve(__dirname, '..');
 
 for (const mode of ['development', 'production']) {
-  test(`Almacenamiento e iconos funcionan en el bundle web ${mode} sin módulos opcionales`, async t => {
+  test(`Almacenamiento, iconos y cliente compartido funcionan en el bundle web ${mode}`, async t => {
     const artifacts = path.join(root, 'artifacts');
     fs.mkdirSync(artifacts, { recursive: true });
     const directory = fs.mkdtempSync(path.join(artifacts, 'web-storage-test-'));
@@ -21,6 +21,7 @@ for (const mode of ['development', 'production']) {
     const entry = path.join(directory, 'entry.js');
     fs.writeFileSync(entry, `
       import AsyncStorage from '@react-native-async-storage/async-storage';
+      import { createFinanceClient } from '@financia/api-client';
       import React from 'react';
       import { StyleSheet } from 'react-native';
       import { renderToStaticMarkup } from 'react-dom/server.browser';
@@ -29,6 +30,13 @@ for (const mode of ['development', 'production']) {
         name: 'wallet-outline', size: 24, color: '#123456', accessibilityLabel: 'Cartera'
       }));
       globalThis.iconStyles = StyleSheet.getSheet().textContent;
+      const client = createFinanceClient({
+        baseUrl: 'https://api.example.test', userId: 'test-user',
+        getSession: async () => ({ userId: 'test-user', accessToken: 'fake-test-token' }),
+        fetch: async () => ({ ok: true, status: 200, redirected: false,
+          json: async () => ({ revision: '0', snapshot: { version: 2, transactions: [], pockets: [] } }) }),
+      });
+      globalThis.clientResult = client.getFinances().finally(() => client.dispose());
       globalThis.storageResult = (async () => {
         await AsyncStorage.setItem('financia-test', 'guardado');
         const value = await AsyncStorage.getItem('financia-test');
@@ -70,6 +78,7 @@ for (const mode of ['development', 'production']) {
         removeItem: key => values.delete(key),
       } },
       console, setTimeout, clearTimeout, TextEncoder, TextDecoder, ReadableStream,
+      URL, AbortController,
       MessageChannel: BrowserMessageChannel,
     };
     // A browser has no CommonJS require, module or exports globals.
@@ -79,6 +88,9 @@ for (const mode of ['development', 'production']) {
       throw new Error(`El bundle web no pudo ejecutarse: ${error.message}`);
     }
     const result = await browser.storageResult;
+    const finances = await browser.clientResult;
+    assert.equal(finances.revision, '0');
+    assert.equal(finances.snapshot.version, 2);
     assert.equal(result[0], 'guardado');
     assert.equal(result[1], null);
     assert.equal(values.size, 0);

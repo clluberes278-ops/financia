@@ -56,7 +56,7 @@ test('shared API client maps every method, escapes IDs and sends current auth an
     { method: 'GET', route: '/api/v2/finances', run: client => client.getFinances(), response: empty },
     { method: 'POST', route: '/api/v2/imports/legacy', body: importBody, run: (client, options) => client.importLegacy(importBody, options), response: { ...empty, revision: '1' } },
     { method: 'POST', route: '/api/v2/movements', body: createBody, run: (client, options) => client.createMovement(createBody, options), response: { revision: '2', movement }, status: 201 },
-    { method: 'PATCH', route: '/api/v2/movements/' + escaped, body: updateBody, run: (client, options) => client.updateMovement(id, updateBody, options), response: { revision: '3', movement: { ...movement, ...updateBody, version: '2' } } },
+    { method: 'PATCH', route: '/api/v2/movements/' + escaped, body: updateBody, run: (client, options) => client.updateMovement(id, updateBody, options), response: { revision: '3', movement: { ...movement, currency: updateBody.currency, amount: updateBody.amount, type: updateBody.type, category: updateBody.category, version: '2' } } },
     { method: 'DELETE', route: '/api/v2/movements/' + escaped + '?expectedVersion=2', run: (client, options) => client.deleteMovement(id, '2', options), response: { revision: '4', id, version: '3', deleted: true } },
     { method: 'POST', route: '/api/v2/pockets', body: pocketBody, run: (client, options) => client.createPocket(pocketBody, options), response: { revision: '5', pocket }, status: 201 },
     { method: 'PATCH', route: '/api/v2/pockets/' + escaped, body: editPocketBody, run: (client, options) => client.editPocket(id, editPocketBody, options), response: { revision: '6', pocket: { ...pocket, version: '2' } } },
@@ -243,6 +243,34 @@ test('disposing aborts active writes and permanently rejects this account-bound 
   client.dispose();
   await rejected;
   await assert.rejects(client.getFinances(), error => error.kind === 'session_changed' && !error.outcomeUnknown);
+});
+
+test('command content and retry key are captured before waiting for a session', async () => {
+  const { createFinanceClient } = loadClient();
+  let unlock;
+  let calls = 0;
+  const waiting = new Promise(resolve => { unlock = resolve; });
+  const request = { ...createBody };
+  const write = { idempotencyKey: 'original-key' };
+  const client = createFinanceClient(configuration(async (_url, options) => {
+    calls++;
+    assert.equal(options.headers['Idempotency-Key'], 'original-key');
+    assert.equal(JSON.parse(options.body).amount, '1250.50');
+    assert.equal(options.cache, 'no-store');
+    return json({ revision: '2', movement }, 201);
+  }, { getSession: async () => { await waiting; return { userId, accessToken: 'token' }; } }));
+  try {
+    const pending = client.createMovement(request, write);
+    request.amount = '999.00';
+    write.idempotencyKey = 'changed-key';
+    unlock();
+    await pending;
+    assert.equal(calls, 1);
+    await assert.rejects(client.createMovement(createBody), error => error.kind === 'validation' && !error.outcomeUnknown);
+    const cyclic = { ...createBody }; cyclic.loop = cyclic;
+    await assert.rejects(client.createMovement(cyclic, { idempotencyKey: 'cyclic' }), error => error.kind === 'validation' && !error.outcomeUnknown);
+    assert.equal(calls, 1);
+  } finally { client.dispose(); }
 });
 
 test('base URLs must be safe and local HTTP is explicitly limited to supported development hosts', () => {

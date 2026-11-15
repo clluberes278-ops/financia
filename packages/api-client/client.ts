@@ -30,7 +30,7 @@ function baseAddress(value: string): string {
   try {
     const url = new URL(value);
     const local = ['localhost', '127.0.0.1', '[::1]', '10.0.2.2'].includes(url.hostname);
-    if (url.username || url.password || url.search || url.hash || (url.protocol !== 'https:' && !(url.protocol === 'http:' && local))) throw new Error();
+    if (url.username || url.password || url.href.includes('?') || url.href.includes('#') || (url.protocol !== 'https:' && !(url.protocol === 'http:' && local))) throw new Error();
     return url.href.replace(/\/+$/, '');
   } catch {
     throw new FinanceApiError('configuration', 'Configura una URL HTTPS para la API, sin credenciales ni parámetros. HTTP solo se admite en desarrollo local.');
@@ -48,15 +48,19 @@ export function createFinanceClient(options: FinanceClientOptions) {
   const active = new Map<AbortController, () => void>();
   let disposed = false;
 
-  async function perform<T>(operationId: keyof typeof operations, body: unknown, params: Record<string, string>, requestOptions: ReadOptions | WriteOptions): Promise<T> {
+  async function perform<T>(operationId: keyof typeof operations, body: unknown, params: Record<string, string>, requestOptions: ReadOptions | WriteOptions = {}): Promise<T> {
     const operation = operations[operationId];
     const isWrite = operation.method !== 'GET';
+    const idempotencyKey = 'idempotencyKey' in requestOptions ? requestOptions.idempotencyKey : undefined;
+    const signal = requestOptions.signal;
     if (disposed) throw new FinanceApiError('session_changed', 'La sesión de este cliente ya se cerró.');
-    if (isWrite && (!('idempotencyKey' in requestOptions) || typeof requestOptions.idempotencyKey !== 'string'
-      || !requestOptions.idempotencyKey.trim() || requestOptions.idempotencyKey.length > 128 || requestOptions.idempotencyKey.trim() !== requestOptions.idempotencyKey))
+    if (isWrite && (typeof idempotencyKey !== 'string'
+      || !idempotencyKey.trim() || idempotencyKey.length > 128 || idempotencyKey.trim() !== idempotencyKey))
       throw new FinanceApiError('validation', 'Cada operación requiere una clave de idempotencia estable de hasta 128 caracteres.');
     // Capture content before the first await; UI edits cannot mutate an in-flight command.
-    const serialized = body === undefined ? undefined : JSON.stringify(body);
+    let serialized: string | undefined;
+    try { serialized = body === undefined ? undefined : JSON.stringify(body); }
+    catch { throw new FinanceApiError('validation', 'Los datos de la operación no se pueden convertir a JSON.'); }
     let path: string = operation.path;
     for (const [key, value] of Object.entries(params)) {
       if (typeof value !== 'string' || !value.trim()) throw new FinanceApiError('validation', 'El identificador y la versión deben ser válidos.');
@@ -83,9 +87,9 @@ export function createFinanceClient(options: FinanceClientOptions) {
     };
     const cancel = () => abort('cancelled');
     active.set(controller, () => abort('session_changed'));
-    requestOptions.signal?.addEventListener('abort', cancel, { once: true });
+    signal?.addEventListener('abort', cancel, { once: true });
     const timer = setTimeout(() => abort('timeout'), timeoutMs);
-    if (requestOptions.signal?.aborted) cancel();
+    if (signal?.aborted) cancel();
 
     const ensureSession = async () => {
       let session: FinanceSession | null;
@@ -101,11 +105,11 @@ export function createFinanceClient(options: FinanceClientOptions) {
       const session = await ensureSession();
       const headers: Record<string, string> = { Accept: 'application/json', Authorization: `Bearer ${session.accessToken}` };
       if (serialized !== undefined) headers['Content-Type'] = 'application/json';
-      if ('idempotencyKey' in requestOptions) headers['Idempotency-Key'] = requestOptions.idempotencyKey;
+      if (idempotencyKey !== undefined) headers['Idempotency-Key'] = idempotencyKey;
       sent = true;
       let response: Response;
       try {
-        response = await fetcher(baseUrl + path, { method: operation.method, body: serialized, headers, signal: controller.signal, redirect: 'error', credentials: 'omit' });
+        response = await fetcher(baseUrl + path, { method: operation.method, body: serialized, headers, signal: controller.signal, redirect: 'error', credentials: 'omit', cache: 'no-store' });
       } catch {
         throw new FinanceApiError('network', 'No se pudo contactar con la API. Reintenta con la misma clave si era una escritura.', undefined, isWrite);
       }
@@ -133,7 +137,7 @@ export function createFinanceClient(options: FinanceClientOptions) {
     try { return await Promise.race([task(), aborted]); }
     finally {
       clearTimeout(timer);
-      requestOptions.signal?.removeEventListener('abort', cancel);
+      signal?.removeEventListener('abort', cancel);
       active.delete(controller);
     }
   }
