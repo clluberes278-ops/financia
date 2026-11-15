@@ -1,0 +1,1576 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Financia API",
+    "version": "2.0.0",
+    "description": "Experimental authenticated finance API. Monetary values in v2 are decimal strings; legacy imports preserve numeric amounts. Generated offline from C# DTOs."
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v2/finances": {
+      "get": {
+        "operationId": "getFinances",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2FinanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request. Binding failures may have an empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token. Empty body."
+          },
+          "404": {
+            "description": "Entity not found or belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, idempotency or financial constraint conflict. Retry concurrency failures with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/imports/legacy": {
+      "post": {
+        "operationId": "importLegacy",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2FinanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request. Binding failures may have an empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token. Empty body."
+          },
+          "404": {
+            "description": "Entity not found or belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, idempotency or financial constraint conflict. Retry concurrency failures with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportLegacyRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/movements": {
+      "post": {
+        "operationId": "createMovement",
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateMovementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request. Binding failures may have an empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token. Empty body."
+          },
+          "404": {
+            "description": "Entity not found or belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, idempotency or financial constraint conflict. Retry concurrency failures with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMovementRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/movements/{id}": {
+      "patch": {
+        "operationId": "updateMovement",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateMovementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request. Binding failures may have an empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token. Empty body."
+          },
+          "404": {
+            "description": "Entity not found or belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, idempotency or financial constraint conflict. Retry concurrency failures with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMovementRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteMovement",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteMovementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request. Binding failures may have an empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token. Empty body."
+          },
+          "404": {
+            "description": "Entity not found or belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, idempotency or financial constraint conflict. Retry concurrency failures with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "expectedVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]\u002B$",
+              "description": "Positive Int64 version; maximum 9223372036854775807."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/pockets": {
+      "post": {
+        "operationId": "createPocket",
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PocketResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request. Binding failures may have an empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token. Empty body."
+          },
+          "404": {
+            "description": "Entity not found or belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, idempotency or financial constraint conflict. Retry concurrency failures with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePocketRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/pockets/{id}": {
+      "patch": {
+        "operationId": "editPocket",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PocketResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request. Binding failures may have an empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token. Empty body."
+          },
+          "404": {
+            "description": "Entity not found or belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, idempotency or financial constraint conflict. Retry concurrency failures with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditPocketRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/pockets/{id}/deposit": {
+      "post": {
+        "operationId": "depositToPocket",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PocketTransferResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request. Binding failures may have an empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token. Empty body."
+          },
+          "404": {
+            "description": "Entity not found or belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, idempotency or financial constraint conflict. Retry concurrency failures with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PocketTransferRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/pockets/{id}/withdraw": {
+      "post": {
+        "operationId": "withdrawFromPocket",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PocketTransferResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request. Binding failures may have an empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token. Empty body."
+          },
+          "404": {
+            "description": "Entity not found or belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, idempotency or financial constraint conflict. Retry concurrency failures with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PocketTransferRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/pockets/{id}/close": {
+      "post": {
+        "operationId": "closePocket",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PocketTransferResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request. Binding failures may have an empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token. Empty body."
+          },
+          "404": {
+            "description": "Entity not found or belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, idempotency or financial constraint conflict. Retry concurrency failures with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosePocketRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "ClosePocketRequest": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B$"
+          }
+        },
+        "required": [
+          "expectedVersion"
+        ],
+        "additionalProperties": false
+      },
+      "CreateMovementRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "DOP",
+              "USD"
+            ]
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B(?:\\.[0-9]{1,2})?$",
+            "description": "Decimal amount, at most two fractional digits; maximum 999999999999.99. Zero is allowed only for currentAmount."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ingreso",
+              "gasto"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "comida",
+              "transporte",
+              "entretenimiento",
+              "servicios",
+              "salud",
+              "educacion",
+              "salario",
+              "otros"
+            ]
+          },
+          "date": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "id",
+          "currency",
+          "amount",
+          "type",
+          "category",
+          "date"
+        ],
+        "additionalProperties": false
+      },
+      "CreateMovementResponse": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B$"
+          },
+          "movement": {
+            "$ref": "#/components/schemas/V2Movement"
+          }
+        },
+        "required": [
+          "revision",
+          "movement"
+        ]
+      },
+      "CreatePocketRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "DOP",
+              "USD"
+            ]
+          },
+          "targetAmount": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B(?:\\.[0-9]{1,2})?$",
+            "description": "Decimal amount, at most two fractional digits; maximum 999999999999.99. Zero is allowed only for currentAmount."
+          },
+          "emoji": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "currency",
+          "targetAmount"
+        ],
+        "additionalProperties": false
+      },
+      "DeleteMovementResponse": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B$"
+          },
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B$"
+          },
+          "deleted": {
+            "type": "boolean",
+            "default": true,
+            "const": true
+          }
+        },
+        "required": [
+          "revision",
+          "id",
+          "version",
+          "deleted"
+        ]
+      },
+      "EditPocketRequest": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "targetAmount": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B(?:\\.[0-9]{1,2})?$",
+            "description": "Decimal amount, at most two fractional digits; maximum 999999999999.99. Zero is allowed only for currentAmount."
+          },
+          "emoji": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "name",
+          "targetAmount"
+        ],
+        "additionalProperties": false
+      },
+      "ImportLegacyRequest": {
+        "type": "object",
+        "properties": {
+          "expectedRevision": {
+            "type": "string",
+            "const": "0"
+          },
+          "snapshot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LegacySnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "legacyRevision": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null,
+            "pattern": "^[0-9]\u002B$"
+          }
+        },
+        "required": [
+          "expectedRevision"
+        ]
+      },
+      "LegacyPocket": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "DOP",
+              "USD"
+            ]
+          },
+          "targetAmount": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 999999999999.99,
+            "description": "Decimal amount, at most two fractional digits; maximum 999999999999.99. Zero is allowed only for currentAmount."
+          },
+          "currentAmount": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 999999999999.99,
+            "description": "Decimal amount, at most two fractional digits; maximum 999999999999.99. Zero is allowed only for currentAmount."
+          },
+          "emoji": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "currency",
+          "targetAmount",
+          "currentAmount",
+          "emoji",
+          "createdAt"
+        ]
+      },
+      "LegacySnapshot": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "const": 1
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Movement"
+            }
+          },
+          "pockets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LegacyPocket"
+            }
+          }
+        },
+        "required": [
+          "version",
+          "transactions",
+          "pockets"
+        ]
+      },
+      "Movement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "DOP",
+              "USD"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 999999999999.99,
+            "description": "Decimal amount, at most two fractional digits; maximum 999999999999.99. Zero is allowed only for currentAmount."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ingreso",
+              "gasto"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "comida",
+              "transporte",
+              "entretenimiento",
+              "servicios",
+              "salud",
+              "educacion",
+              "salario",
+              "ahorro",
+              "otros"
+            ]
+          },
+          "date": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "pocketId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "currency",
+          "amount",
+          "type",
+          "category",
+          "date"
+        ]
+      },
+      "PocketResponse": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B$"
+          },
+          "pocket": {
+            "$ref": "#/components/schemas/V2Pocket"
+          }
+        },
+        "required": [
+          "revision",
+          "pocket"
+        ]
+      },
+      "PocketTransferRequest": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B(?:\\.[0-9]{1,2})?$",
+            "description": "Decimal amount, at most two fractional digits; maximum 999999999999.99. Zero is allowed only for currentAmount."
+          },
+          "expectedVersion": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B$"
+          }
+        },
+        "required": [
+          "amount",
+          "expectedVersion"
+        ],
+        "additionalProperties": false
+      },
+      "PocketTransferResponse": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B$"
+          },
+          "pocket": {
+            "$ref": "#/components/schemas/V2Pocket"
+          },
+          "movement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/V2Movement"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "revision",
+          "pocket",
+          "movement"
+        ]
+      },
+      "UpdateMovementRequest": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B$"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "DOP",
+              "USD"
+            ]
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B(?:\\.[0-9]{1,2})?$",
+            "description": "Decimal amount, at most two fractional digits; maximum 999999999999.99. Zero is allowed only for currentAmount."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ingreso",
+              "gasto"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "comida",
+              "transporte",
+              "entretenimiento",
+              "servicios",
+              "salud",
+              "educacion",
+              "salario",
+              "otros"
+            ]
+          },
+          "date": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "currency",
+          "amount",
+          "type",
+          "category",
+          "date"
+        ],
+        "additionalProperties": false
+      },
+      "V2FinanceResponse": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B$"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/V2Snapshot"
+          }
+        },
+        "required": [
+          "revision",
+          "snapshot"
+        ]
+      },
+      "V2Movement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "DOP",
+              "USD"
+            ]
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B(?:\\.[0-9]{1,2})?$",
+            "description": "Decimal amount, at most two fractional digits; maximum 999999999999.99. Zero is allowed only for currentAmount."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ingreso",
+              "gasto"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "comida",
+              "transporte",
+              "entretenimiento",
+              "servicios",
+              "salud",
+              "educacion",
+              "salario",
+              "ahorro",
+              "otros"
+            ]
+          },
+          "date": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "pocketId": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B$"
+          }
+        },
+        "required": [
+          "id",
+          "currency",
+          "amount",
+          "type",
+          "category",
+          "date",
+          "version"
+        ]
+      },
+      "V2Pocket": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "DOP",
+              "USD"
+            ]
+          },
+          "targetAmount": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B(?:\\.[0-9]{1,2})?$",
+            "description": "Decimal amount, at most two fractional digits; maximum 999999999999.99. Zero is allowed only for currentAmount."
+          },
+          "currentAmount": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B(?:\\.[0-9]{1,2})?$",
+            "description": "Decimal amount, at most two fractional digits; maximum 999999999999.99. Zero is allowed only for currentAmount."
+          },
+          "emoji": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B$"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "currency",
+          "targetAmount",
+          "currentAmount",
+          "emoji",
+          "createdAt",
+          "version"
+        ]
+      },
+      "V2Snapshot": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "const": 2
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V2Movement"
+            }
+          },
+          "pockets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V2Pocket"
+            }
+          }
+        },
+        "required": [
+          "version",
+          "transactions",
+          "pockets"
+        ]
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "movementIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instance": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

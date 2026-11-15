@@ -8,6 +8,7 @@ using Financia.Api.Persistence;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using Financia.Api.Contracts;
 
 namespace Financia.Api.Features;
 
@@ -64,8 +65,8 @@ public static class NormalizedFinances
             var result = await Read(db, Owner(user), ct);
             await transaction.CommitAsync(ct);
             return Results.Ok(result);
-        });
-        routes.MapPost("/imports/legacy", Import);
+        }).WithFinanceContract("getFinances");
+        routes.MapPost("/imports/legacy", Import).WithFinanceContract("importLegacy");
         routes.MapMovementCommands();
         routes.MapPocketCommands();
     }

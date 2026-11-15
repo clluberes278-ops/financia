@@ -1,3 +1,4 @@
+using Financia.Api.Contracts;
 using System.Security.Claims;
 using System.Text.Json.Serialization;
 using Financia.Api.Persistence;
@@ -17,9 +18,9 @@ public static class MovementCommands
 {
     public static void MapMovementCommands(this RouteGroupBuilder routes)
     {
-        routes.MapPost("/movements", Create);
-        routes.MapPatch("/movements/{id}", Update);
-        routes.MapDelete("/movements/{id}", Delete);
+        routes.MapPost("/movements", Create).WithFinanceContract("createMovement");
+        routes.MapPatch("/movements/{id}", Update).WithFinanceContract("updateMovement");
+        routes.MapDelete("/movements/{id}", Delete).WithFinanceContract("deleteMovement");
     }
 
     private static string? Validate(CreateMovementRequest request, out decimal amount, out DateTime occurredAt)
@@ -83,7 +84,7 @@ public static class MovementCommands
                 return new(409, new { error = "La eliminación dejaría sin respaldo el dinero reservado en bolsillos." });
             entity!.DeletedAt = context.Now;
             entity.Version++;
-            return new(200, new { revision = context.Revision, id, version = FinanceCommands.Number(entity.Version), deleted = true });
+            return new(200, new DeleteMovementResponse(context.Revision, id, FinanceCommands.Number(entity.Version)));
         }, ct);
     }
 

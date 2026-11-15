@@ -1,3 +1,4 @@
+using Financia.Api.Contracts;
 using System.Security.Claims;
 using System.Text.Json.Serialization;
 using Financia.Api.Persistence;
@@ -18,11 +19,11 @@ public static class PocketCommands
 {
     public static void MapPocketCommands(this RouteGroupBuilder routes)
     {
-        routes.MapPost("/pockets", Create);
-        routes.MapPatch("/pockets/{id}", Edit);
-        routes.MapPost("/pockets/{id}/deposit", Deposit);
-        routes.MapPost("/pockets/{id}/withdraw", Withdraw);
-        routes.MapPost("/pockets/{id}/close", Close);
+        routes.MapPost("/pockets", Create).WithFinanceContract("createPocket");
+        routes.MapPatch("/pockets/{id}", Edit).WithFinanceContract("editPocket");
+        routes.MapPost("/pockets/{id}/deposit", Deposit).WithFinanceContract("depositToPocket");
+        routes.MapPost("/pockets/{id}/withdraw", Withdraw).WithFinanceContract("withdrawFromPocket");
+        routes.MapPost("/pockets/{id}/close", Close).WithFinanceContract("closePocket");
     }
 
     private static Task<IResult> Create(CreatePocketRequest request, HttpRequest http,
@@ -41,7 +42,7 @@ public static class PocketCommands
                 CreatedAt = context.Now, Version = 1,
             };
             context.Db.Pockets.Add(pocket);
-            return new CommandOutcome(201, new { revision = context.Revision, pocket = NormalizedFinances.ToResponse(pocket) });
+            return new CommandOutcome(201, new PocketResponse(context.Revision, NormalizedFinances.ToResponse(pocket)));
         }, ct);
     }
 
@@ -60,7 +61,7 @@ public static class PocketCommands
             pocket.Emoji = request.Emoji?.Trim() ?? "🎯";
             pocket.Color = request.Color;
             pocket.Version++;
-            return new CommandOutcome(200, new { revision = context.Revision, pocket = NormalizedFinances.ToResponse(pocket) });
+            return new CommandOutcome(200, new PocketResponse(context.Revision, NormalizedFinances.ToResponse(pocket)));
         }, ct);
     }
 
@@ -95,8 +96,7 @@ public static class PocketCommands
             pocket.CurrentAmount += deposit ? amount : -amount;
             pocket.Version++;
             context.Db.Movements.Add(movement);
-            return new CommandOutcome(200, new { revision = context.Revision,
-                pocket = NormalizedFinances.ToResponse(pocket), movement = NormalizedFinances.ToResponse(movement) });
+            return new CommandOutcome(200, new PocketTransferResponse(context.Revision, NormalizedFinances.ToResponse(pocket), NormalizedFinances.ToResponse(movement)));
         }, ct);
     }
 
@@ -117,8 +117,7 @@ public static class PocketCommands
             pocket.CurrentAmount = 0;
             pocket.ClosedAt = context.Now;
             pocket.Version++;
-            return new CommandOutcome(200, new { revision = context.Revision,
-                pocket = NormalizedFinances.ToResponse(pocket), movement = movement is null ? null : NormalizedFinances.ToResponse(movement) });
+            return new CommandOutcome(200, new PocketTransferResponse(context.Revision, NormalizedFinances.ToResponse(pocket), movement is null ? null : NormalizedFinances.ToResponse(movement)));
         }, ct);
     }
 

@@ -8,6 +8,18 @@ using Financia.Api.Realtime;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Financia.Api.Contracts;
+
+if (args.Contains("--export-openapi"))
+{
+    var index = Array.IndexOf(args, "--export-openapi");
+    if (index + 1 >= args.Length || args[index + 1].StartsWith("--", StringComparison.Ordinal))
+        throw new ArgumentException("--export-openapi requires an output file path.");
+    var destination = Path.GetFullPath(args[index + 1]);
+    Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+    File.WriteAllText(destination, FinanceApiContract.Serialize());
+    return;
+}
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddProblemDetails();
