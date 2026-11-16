@@ -22,6 +22,9 @@ public static class FinanceApiContract
         new("POST", "/api/v2/pockets/{id}/deposit", "depositToPocket", typeof(PocketTransferRequest), typeof(PocketTransferResponse)),
         new("POST", "/api/v2/pockets/{id}/withdraw", "withdrawFromPocket", typeof(PocketTransferRequest), typeof(PocketTransferResponse)),
         new("POST", "/api/v2/pockets/{id}/close", "closePocket", typeof(ClosePocketRequest), typeof(PocketTransferResponse)),
+        new("POST", "/api/v2/finances/clear-transactions", "clearTransactions", typeof(FinanceRevisionRequest), typeof(FinanceCollectionResponse)),
+        new("POST", "/api/v2/finances/reset", "resetFinances", typeof(FinanceRevisionRequest), typeof(FinanceCollectionResponse)),
+        new("POST", "/api/v2/imports/bank", "importBankTransactions", typeof(BankImportRequest), typeof(BankImportResponse)),
     ];
 
     public static readonly IReadOnlyList<Type> DtoTypes = [
@@ -29,6 +32,8 @@ public static class FinanceApiContract
         typeof(LegacyPocket), typeof(Movement), typeof(V2Movement), typeof(V2Pocket), typeof(V2Snapshot), typeof(V2FinanceResponse),
         typeof(CreateMovementResponse), typeof(CreatePocketRequest), typeof(EditPocketRequest), typeof(PocketTransferRequest),
         typeof(ClosePocketRequest), typeof(PocketResponse), typeof(PocketTransferResponse), typeof(DeleteMovementResponse),
+        typeof(FinanceRevisionRequest), typeof(FinanceCollectionResponse),
+        typeof(BankImportRequest), typeof(BankImportResponse),
     ];
 
     public static RouteHandlerBuilder WithFinanceContract(this RouteHandlerBuilder route, string operationId)
@@ -133,7 +138,20 @@ public static class FinanceApiContract
                 propertySchema["format"] = "date-time";
             if (propertyType == typeof(string) && name is "revision" or "version" or "expectedVersion" or "legacyRevision")
                 propertySchema["pattern"] = "^[0-9]+$";
-            if (name == "expectedRevision") propertySchema["const"] = "0";
+            if (name == "expectedRevision" && dto == typeof(ImportLegacyRequest)) propertySchema["const"] = "0";
+            if (name == "expectedRevision" && dto == typeof(FinanceRevisionRequest))
+            {
+                propertySchema["pattern"] = "^[0-9]+$";
+                propertySchema["description"] = "Current positive Int64 account revision; maximum 9223372036854775807.";
+            }
+            if (dto == typeof(FinanceCollectionResponse) && name == "cleared") propertySchema["const"] = true;
+            if (dto == typeof(FinanceCollectionResponse) && name == "scope") propertySchema["enum"] = new JsonArray("transactions", "all");
+            if (dto == typeof(BankImportRequest) && name == "transactions")
+            {
+                propertySchema["maxItems"] = 1000;
+                propertySchema["description"] = "Unique gmail: IDs; ordinary movements only (no pocketId or ahorro category). Existing IDs, including deleted rows, are skipped.";
+            }
+            if (dto == typeof(BankImportResponse) && name is "imported" or "skipped") propertySchema["minimum"] = 0;
             if (name == "version" && dto == typeof(LegacySnapshot)) propertySchema["const"] = 1;
             if (name == "version" && dto == typeof(V2Snapshot)) propertySchema["const"] = 2;
             if (name == "deleted") propertySchema["const"] = true;

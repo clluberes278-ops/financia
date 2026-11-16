@@ -1,6 +1,6 @@
 # Edición, eliminación y bolsillos en v2
 
-Estado: implementado en la API experimental v2, desactivada por defecto. La app actual aún usa v1. Consulta [configuración y autenticación](V2.md) antes de probar con una base aislada.
+Estado: implementado en la API v2, desactivada por defecto en el servidor. La app actual ya usa estos comandos al conectar una cuenta. Consulta [configuración y autenticación](V2.md) y [activación del cliente](CLIENT_CONNECTION.md) antes de probar con una base aislada.
 
 ## Migración
 

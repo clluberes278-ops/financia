@@ -68,6 +68,8 @@ public static class NormalizedFinances
         }).WithFinanceContract("getFinances");
         routes.MapPost("/imports/legacy", Import).WithFinanceContract("importLegacy");
         routes.MapMovementCommands();
+        routes.MapFinanceCollectionCommands();
+        routes.MapBankImportCommands();
         routes.MapPocketCommands();
     }
 

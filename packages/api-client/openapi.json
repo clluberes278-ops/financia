@@ -866,6 +866,252 @@
           }
         }
       }
+    },
+    "/api/v2/finances/clear-transactions": {
+      "post": {
+        "operationId": "clearTransactions",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceCollectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request. Binding failures may have an empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token. Empty body."
+          },
+          "404": {
+            "description": "Entity not found or belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, idempotency or financial constraint conflict. Retry concurrency failures with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinanceRevisionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/finances/reset": {
+      "post": {
+        "operationId": "resetFinances",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceCollectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request. Binding failures may have an empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token. Empty body."
+          },
+          "404": {
+            "description": "Entity not found or belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, idempotency or financial constraint conflict. Retry concurrency failures with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinanceRevisionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/imports/bank": {
+      "post": {
+        "operationId": "importBankTransactions",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankImportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request. Binding failures may have an empty body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token. Empty body."
+          },
+          "404": {
+            "description": "Entity not found or belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version, idempotency or financial constraint conflict. Retry concurrency failures with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankImportRequest"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -877,6 +1123,45 @@
       }
     },
     "schemas": {
+      "BankImportRequest": {
+        "type": "object",
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Movement"
+            },
+            "maxItems": 1000,
+            "description": "Unique gmail: IDs; ordinary movements only (no pocketId or ahorro category). Existing IDs, including deleted rows, are skipped."
+          }
+        },
+        "required": [
+          "transactions"
+        ],
+        "additionalProperties": false
+      },
+      "BankImportResponse": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B$"
+          },
+          "imported": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "revision",
+          "imported",
+          "skipped"
+        ]
+      },
       "ClosePocketRequest": {
         "type": "object",
         "properties": {
@@ -1070,6 +1355,45 @@
           "expectedVersion",
           "name",
           "targetAmount"
+        ],
+        "additionalProperties": false
+      },
+      "FinanceCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B$"
+          },
+          "cleared": {
+            "type": "boolean",
+            "const": true
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "transactions",
+              "all"
+            ]
+          }
+        },
+        "required": [
+          "revision",
+          "cleared",
+          "scope"
+        ]
+      },
+      "FinanceRevisionRequest": {
+        "type": "object",
+        "properties": {
+          "expectedRevision": {
+            "type": "string",
+            "pattern": "^[0-9]\u002B$",
+            "description": "Current positive Int64 account revision; maximum 9223372036854775807."
+          }
+        },
+        "required": [
+          "expectedRevision"
         ],
         "additionalProperties": false
       },

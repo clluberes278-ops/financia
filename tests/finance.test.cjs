@@ -10,11 +10,13 @@ function loader(mocks = {}) {
   function load(file) {
     file = path.resolve(__dirname, '..', file);
     if (!path.extname(file)) file += '.ts';
+    if (file.endsWith('.json')) return JSON.parse(fs.readFileSync(file, 'utf8'));
     if (cache.has(file)) return cache.get(file).exports;
     const module = { exports: {} }; cache.set(file, module);
-    const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+    const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
     const localRequire = name => {
       if (Object.hasOwn(mocks, name)) return mocks[name];
+      if (name === '@financia/api-client') return load('packages/api-client/index.ts');
       if (name.startsWith('.')) return load(path.relative(path.resolve(__dirname, '..'), path.resolve(path.dirname(file), name)));
       return require(name);
     };
@@ -39,7 +41,8 @@ test('bolsillos rechazan saldos fuera de precisión o rango sin descartar el his
 });
 function financialStore() {
   const disk = storage();
-  const load = loader({ '@react-native-async-storage/async-storage': { __esModule: true, default: disk }, '../utils/supabase': { supabase: null }, '../utils/financeApi': { financeApiUrl: '' } });
+  const load = loader({ '@react-native-async-storage/async-storage': { __esModule: true, default: disk }, '../utils/supabase': { supabase: null }, '../utils/financeApi': { financeApiUrl: '' },
+    '../utils/connectedFinanceSession': { connectFinanceSession: () => { throw new Error('El modo local no debe crear una sesión remota.'); } } });
   return { disk, store: load('store/useFinanceStore.ts').useFinanceStore };
 }
 test('cuentas e invitado aislados; historial ambiguo sin migrar ni borrar', async () => {

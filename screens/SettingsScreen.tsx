@@ -211,7 +211,7 @@ export default function SettingsScreen() {
               </Pressable>
             )}
             <Text style={[styles.helperText, { color: theme.textSecondary, marginTop: 10 }]}>
-              {t('Google concede este permiso para toda la bandeja. Financia solo consulta los dos remitentes de BHD admitidos y guarda los movimientos extraídos, no los correos.')}
+              {t('Google concede este permiso para toda la bandeja. Financia consulta los remitentes bancarios configurados y guarda los movimientos extraídos, no los correos completos.')}
             </Text>
           </View>
         </>

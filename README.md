@@ -53,13 +53,15 @@ npm run api:test
 npm run api:build
 ```
 
+Para probar la conexión local en dos terminales: `npm run api:connected` y `npm run web:connected`. El segundo puede sustituirse por `npm run android:connected`. Usan la identidad pública de `.env` y una base de desarrollo aislada, sin cambiar tu configuración guardada.
+
 Consulta [backend/README.md](backend/README.md) para configurar autenticación, PostgreSQL y la conexión desde el teléfono. SQLite sirve para el desarrollo local. La API no está desplegada.
 
-La [API v2 en desarrollo](backend/V2.md) ya incluye tablas normalizadas, importación, creación/edición/eliminación de movimientos, operaciones de bolsillos con protección de saldo, recibos contra duplicados y notificaciones SignalR mediante una outbox. Está desactivada por defecto y aún no está conectada a las interfaces actuales. El [plan de migración](docs/architecture/migration-plan.md) describe los siguientes pasos para separar web y móvil.
+La [API v2](backend/V2.md) incluye tablas normalizadas, importación, movimientos, bolsillos, recibos y notificaciones SignalR. La app actual ya está integrada: consulta [cómo activar la conexión](backend/CLIENT_CONNECTION.md). El servidor requiere activar v2 explícitamente. El [plan de migración](docs/architecture/migration-plan.md) describe los siguientes pasos para separar web y móvil.
 
-El [cliente compartido `@financia/api-client`](packages/api-client/README.md) ya está preparado como npm workspace. `npm run api:generate` genera el contrato y los tipos desde C#; `npm run api:check` detecta diferencias. Su integración con las pantallas actuales es el siguiente paso.
+El [cliente compartido `@financia/api-client`](packages/api-client/README.md) es un npm workspace utilizado por la conexión de la app. `npm run api:generate` genera el contrato y los tipos desde C#; `npm run api:check` detecta diferencias. La futura web independiente usará el mismo paquete.
 
-Con `FINANCIA_API_URL` vacío se mantiene el almacenamiento local. Al configurarlo, las cuentas autenticadas guardan en la API y requieren conexión; el invitado sigue siendo local. El historial local del mismo usuario se importa únicamente si el servidor está vacío. El original local se conserva y no se fusiona automáticamente con un servidor que ya tiene datos.
+Con `FINANCIA_API_URL` vacío se mantiene el almacenamiento local. Al configurarlo, las cuentas autenticadas usan v2 y requieren conexión; el invitado sigue siendo local. La primera activación muestra qué historial propio se usará y requiere confirmación. El original local se conserva separado. Las operaciones con resultado incierto guardan su clave para recuperarse sin duplicados.
 
 ## Datos existentes
 

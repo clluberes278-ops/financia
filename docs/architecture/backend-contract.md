@@ -2,7 +2,7 @@
 
 Estado: diseño inicial para implementar. No modifica la base ni los endpoints actuales.
 
-Estado implementado: tablas normalizadas, importación/lectura v2, creación/edición/eliminación de movimientos, operaciones de bolsillos, recibos, outbox y hub SignalR, detrás de una bandera desactivada por defecto. Consulta [el estado implementado](../../backend/V2.md) y [las operaciones financieras](../../backend/LIFECYCLE.md). El [cliente HTTP compartido](../../packages/api-client/README.md), su contrato OpenAPI y tipos generados ya existen; falta integrarlos con las interfaces y su recuperación en tiempo real.
+Estado implementado: tablas normalizadas, importación/lectura v2, operaciones financieras, recibos, outbox y hub SignalR. El backend requiere activar v2 explícitamente. Consulta [el estado implementado](../../backend/V2.md), [las operaciones](../../backend/LIFECYCLE.md) y [la conexión de la app](../../backend/CLIENT_CONNECTION.md). La app actual ya integra el cliente compartido, SignalR y recuperación del estado; la web independiente sigue pendiente.
 
 ## Decisiones
 

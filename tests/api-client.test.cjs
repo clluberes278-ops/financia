@@ -63,6 +63,9 @@ test('shared API client maps every method, escapes IDs and sends current auth an
     { method: 'POST', route: '/api/v2/pockets/' + escaped + '/deposit', body: transferBody, run: (client, options) => client.depositToPocket(id, transferBody, options), response: { revision: '7', pocket, movement: { ...movement, category: 'ahorro', type: 'gasto', pocketId: pocket.id } } },
     { method: 'POST', route: '/api/v2/pockets/' + escaped + '/withdraw', body: transferBody, run: (client, options) => client.withdrawFromPocket(id, transferBody, options), response: { revision: '8', pocket, movement: { ...movement, category: 'ahorro', pocketId: pocket.id } } },
     { method: 'POST', route: '/api/v2/pockets/' + escaped + '/close', body: closeBody, run: (client, options) => client.closePocket(id, closeBody, options), response: { revision: '9', pocket, movement: null } },
+    { method: 'POST', route: '/api/v2/finances/clear-transactions', body: { expectedRevision: '9' }, run: (client, options) => client.clearTransactions({ expectedRevision: '9' }, options), response: { revision: '10', cleared: true, scope: 'transactions' } },
+    { method: 'POST', route: '/api/v2/finances/reset', body: { expectedRevision: '10' }, run: (client, options) => client.resetFinances({ expectedRevision: '10' }, options), response: { revision: '11', cleared: true, scope: 'all' } },
+    { method: 'POST', route: '/api/v2/imports/bank', body: { transactions: [] }, run: (client, options) => client.importBankTransactions({ transactions: [] }, options), response: { revision: '12', imported: 0, skipped: 0 } },
   ];
   let current = 0;
   let accessToken = 'token-0';

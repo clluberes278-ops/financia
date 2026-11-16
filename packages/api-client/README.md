@@ -2,7 +2,7 @@
 
 `@financia/api-client` es un workspace TypeScript privado para web y React Native CLI. No depende de React, React Native, Expo ni de un proveedor de autenticación concreto. Sus consumidores necesitan `fetch`, `URL` y `AbortController`; la aplicación actual ya configura su entorno web/nativo. El paquete se entrega como TypeScript para compilar con Metro, Vite o webpack.
 
-Este incremento prepara el acceso compartido: las pantallas y el almacenamiento actuales siguen usando v1. No inicializa ni migra cuentas automáticamente.
+La app actual ya usa este paquete al conectar una cuenta mediante `FINANCIA_API_URL`; las cuentas se activan con confirmación explícita. El SDK por sí solo no inicializa ni migra cuentas.
 
 ## Contrato y generación
 
@@ -72,7 +72,7 @@ client.dispose();
 
 ## Operaciones
 
-`getFinances`, `importLegacy`, `createMovement`, `updateMovement`, `deleteMovement`, `createPocket`, `editPocket`, `depositToPocket`, `withdrawFromPocket` y `closePocket` usan rutas y códigos de éxito generados desde el contrato. Los comandos requieren `{ idempotencyKey, signal? }`; la lectura admite `{ signal? }`. Consulta [el contrato financiero](../../backend/LIFECYCLE.md) para los cuerpos y versiones esperadas.
+`getFinances`, `importLegacy`, `createMovement`, `updateMovement`, `deleteMovement`, `createPocket`, `editPocket`, `depositToPocket`, `withdrawFromPocket`, `closePocket`, `clearTransactions`, `resetFinances` e `importBankTransactions` usan rutas y códigos generados desde el contrato. Los comandos requieren `{ idempotencyKey, signal? }`; la lectura admite `{ signal? }`. Consulta [el contrato financiero](../../backend/LIFECYCLE.md) y [las acciones de la app](../../backend/CLIENT_CONNECTION.md).
 
 Los montos v2 y las revisiones siguen siendo cadenas. La importación legacy mantiene los números del formato anterior. Una respuesta incorrecta se rechaza con `invalid_response`: no se sustituye por un historial vacío ni se convierte un importe a otro tipo.
 
@@ -82,4 +82,4 @@ Las URLs exigen HTTPS, excepto HTTP en `localhost`, `127.0.0.1`, `[::1]` y `10.0
 
 ## Pendiente de integración
 
-Este paquete cubre HTTP. La conexión SignalR, recuperación al reconectar, ciclo de vida de pantalla y caché por cuenta se conectarán al integrar móvil y web. El backend v2 sigue desactivado por defecto y conserva el límite de una instancia para las notificaciones hasta añadir un transporte compartido.
+Este paquete cubre HTTP. La app implementa SignalR y recuperación en `utils/financeRealtime.ts`, y el registro durable de comandos por cuenta en `utils/cloudFinanceSession.ts`. No hay caché de lectura offline para cuentas conectadas. La web React DOM independiente aún debe integrarse. El backend v2 sigue desactivado por defecto y conserva el límite de una instancia para notificaciones hasta añadir un transporte compartido.

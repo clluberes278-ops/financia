@@ -3,6 +3,7 @@ import type {
   V2FinanceResponse, ImportLegacyRequest, CreateMovementRequest, UpdateMovementRequest,
   CreateMovementResponse, DeleteMovementResponse, CreatePocketRequest, EditPocketRequest,
   PocketTransferRequest, ClosePocketRequest, PocketResponse, PocketTransferResponse,
+  FinanceRevisionRequest, FinanceCollectionResponse, BankImportRequest, BankImportResponse,
 } from './generated/models';
 import { validateResponse } from './validation';
 
@@ -153,6 +154,9 @@ export function createFinanceClient(options: FinanceClientOptions) {
     depositToPocket: (id: string, request: PocketTransferRequest, write: WriteOptions) => perform<PocketTransferResponse>('depositToPocket', request, { id }, write),
     withdrawFromPocket: (id: string, request: PocketTransferRequest, write: WriteOptions) => perform<PocketTransferResponse>('withdrawFromPocket', request, { id }, write),
     closePocket: (id: string, request: ClosePocketRequest, write: WriteOptions) => perform<PocketTransferResponse>('closePocket', request, { id }, write),
+    clearTransactions: (request: FinanceRevisionRequest, write: WriteOptions) => perform<FinanceCollectionResponse>('clearTransactions', request, {}, write),
+    resetFinances: (request: FinanceRevisionRequest, write: WriteOptions) => perform<FinanceCollectionResponse>('resetFinances', request, {}, write),
+    importBankTransactions: (request: BankImportRequest, write: WriteOptions) => perform<BankImportResponse>('importBankTransactions', request, {}, write),
     dispose: () => { disposed = true; for (const cancel of active.values()) cancel(); active.clear(); },
   };
 }

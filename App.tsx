@@ -4,7 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StatusBar } from 'react-native';
+import { Platform, StatusBar } from 'react-native';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import DashboardScreen from './screens/DashboardScreen';
 import TransactionsScreen from './screens/TransactionsScreen';
@@ -21,6 +21,11 @@ import { useGmailStore } from './store/useGmailStore';
 import WelcomeScreen from './screens/WelcomeScreen';
 import { ActivityIndicator, AppState, Pressable, View } from 'react-native';
 import { ThemedText } from './utils/theme';
+import FinanceConnectionStatus from './components/FinanceConnectionStatus';
+import FinanceMigrationScreen from './components/FinanceMigrationScreen';
+import { financeApiUrl } from './utils/financeApi';
+import { financeAccessToken } from './utils/connectedFinanceSession';
+import { startFinanceRealtime } from './utils/financeRealtime';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -34,6 +39,8 @@ export default function App() {
   const financeOwner = useFinanceStore(s => s.owner);
   const financeLoaded = useFinanceStore(s => s.isLoaded);
   const financeError = useFinanceStore(s => s.error);
+  const financeMigration = useFinanceStore(s => s.migration);
+  const financeMode = useFinanceStore(s => s.syncMode);
   const activateOwner = useFinanceStore(s => s.activateOwner);
   const expectedOwner = session ? 'user:' + session.user.id : 'guest';
   const financeReady = financeLoaded && financeOwner === expectedOwner;
@@ -52,7 +59,7 @@ export default function App() {
   }, [authLoading, financeOwner, expectedOwner, activateOwner]);
 
   useEffect(() => {
-    if (!session || !financeReady) return;
+    if (!session || !financeReady || financeMigration) return;
 
     void loadImportedTransactions();
     const appStateSubscription = AppState.addEventListener('change', (state) => {
@@ -66,7 +73,34 @@ export default function App() {
       appStateSubscription.remove();
       clearInterval(refreshInterval);
     };
-  }, [session?.user.id, financeReady, loadImportedTransactions]);
+  }, [session?.user.id, financeReady, financeMigration, loadImportedTransactions]);
+
+  useEffect(() => {
+    if (!financeReady || financeMode !== 'cloud' || financeMigration) return;
+    const owner = expectedOwner;
+    const refresh = () => { void useFinanceStore.getState().refresh(); };
+    const stop = startFinanceRealtime({
+      baseUrl: financeApiUrl, getAccessToken: () => financeAccessToken(owner), onChange: refresh,
+      onStatus: status => useFinanceStore.getState().setSyncStatus(owner, status),
+      onError: message => useFinanceStore.getState().setSyncError(owner, message),
+    });
+    const appState = AppState.addEventListener('change', state => { if (state === 'active') refresh(); });
+    const interval = setInterval(() => { if (AppState.currentState === 'active') refresh(); }, 30000);
+    const onVisibility = () => { if (document.visibilityState === 'visible') refresh(); };
+    if (Platform.OS === 'web') {
+      window.addEventListener('focus', refresh);
+      window.addEventListener('online', refresh);
+      document.addEventListener('visibilitychange', onVisibility);
+    }
+    return () => {
+      stop(); appState.remove(); clearInterval(interval);
+      if (Platform.OS === 'web') {
+        window.removeEventListener('focus', refresh);
+        window.removeEventListener('online', refresh);
+        document.removeEventListener('visibilitychange', onVisibility);
+      }
+    };
+  }, [financeReady, financeMode, financeMigration, expectedOwner]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -89,12 +123,18 @@ export default function App() {
                   <Pressable accessibilityRole="button" onPress={() => void activateOwner(expectedOwner)} style={{ padding: 16 }}>
                     <ThemedText style={{ color: accentColor }}>{t('Reintentar')}</ThemedText>
                   </Pressable>
+                  {session ? <Pressable accessibilityRole="button" onPress={() => void useAuthStore.getState().signOut()} style={{ padding: 16 }}>
+                    <ThemedText style={{ color: accentColor }}>{t('Cerrar sesión')}</ThemedText>
+                  </Pressable> : null}
                 </> : <ActivityIndicator size="large" color={accentColor} />}
               </View>
-            ) : (
+            ) : financeMigration ? <FinanceMigrationScreen /> : (
+              <View style={{ flex: 1 }}>
+              <FinanceConnectionStatus />
               <Tab.Navigator key={expectedOwner}
 
               screenOptions={{
+                headerStatusBarHeight: financeMode === 'cloud' ? 0 : undefined,
                 headerStyle: {
                   backgroundColor: theme.header,
                   ...getShadowStyle({ color: '#000000', offsetX: 0, offsetY: 0, opacity: 0, radius: 0 }),
@@ -188,6 +228,7 @@ export default function App() {
                 }}
               />
               </Tab.Navigator>
+              </View>
             )}
           </NavigationContainer>
         </SafeAreaProvider>
