@@ -10,7 +10,13 @@ const createConfig = require('../webpack.config');
 const root = path.resolve(__dirname, '..');
 
 for (const mode of ['development', 'production']) {
-  test(`Almacenamiento, iconos y cliente compartido funcionan en el bundle web ${mode}`, async t => {
+  test(`La app inicia y funcionan almacenamiento, iconos y API en el bundle web ${mode}`, async t => {
+    // Never initialize a real identity provider from the developer's .env in this test.
+    for (const key of ['FINANCIA_SUPABASE_URL', 'FINANCIA_SUPABASE_ANON_KEY', 'FINANCIA_API_URL']) {
+      const original = process.env[key];
+      process.env[key] = '';
+      t.after(() => { if (original === undefined) delete process.env[key]; else process.env[key] = original; });
+    }
     const artifacts = path.join(root, 'artifacts');
     fs.mkdirSync(artifacts, { recursive: true });
     const directory = fs.mkdtempSync(path.join(artifacts, 'web-storage-test-'));
@@ -23,9 +29,14 @@ for (const mode of ['development', 'production']) {
       import AsyncStorage from '@react-native-async-storage/async-storage';
       import { createFinanceClient } from '@financia/api-client';
       import React from 'react';
+      import App from '../../App';
+      import { SafeAreaProvider } from 'react-native-safe-area-context';
       import { StyleSheet } from 'react-native';
       import { renderToStaticMarkup } from 'react-dom/server.browser';
       import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons/static';
+      globalThis.appMarkup = renderToStaticMarkup(React.createElement(SafeAreaProvider, {
+        initialMetrics: { insets: { top: 0, left: 0, right: 0, bottom: 0 }, frame: { x: 0, y: 0, width: 1280, height: 720 } }
+      }, React.createElement(App)));
       globalThis.iconMarkup = renderToStaticMarkup(React.createElement(MaterialDesignIcons, {
         name: 'wallet-outline', size: 24, color: '#123456', accessibilityLabel: 'Cartera'
       }));
@@ -54,6 +65,9 @@ for (const mode of ['development', 'production']) {
       compiler.close(closeError => {
         if (error || closeError) return reject(error || closeError);
         if (stats.hasErrors()) return reject(new Error(stats.toString({ all: false, errors: true })));
+        const nativeSheetModules = [...stats.compilation.modules].filter(module =>
+          module.resource && /node_modules[\\/]@gorhom[\\/]bottom-sheet[\\/]/.test(module.resource));
+        if (nativeSheetModules.length) return reject(new Error('La web está incluyendo el bottom sheet nativo.'));
         const missingModules = stats.toJson({ all: false, warnings: true }).warnings.filter(warning => warning.message.includes('Module not found'));
         if (missingModules.length) return reject(new Error(missingModules.map(warning => warning.message).join('\n')));
         resolve();
@@ -77,8 +91,8 @@ for (const mode of ['development', 'production']) {
         setItem: (key, value) => values.set(key, value),
         removeItem: key => values.delete(key),
       } },
-      console, setTimeout, clearTimeout, TextEncoder, TextDecoder, ReadableStream,
-      URL, AbortController,
+      console, setTimeout, clearTimeout, setInterval, clearInterval, TextEncoder, TextDecoder, ReadableStream,
+      URL, AbortController, fetch, Headers, Request, Response, queueMicrotask,
       MessageChannel: BrowserMessageChannel,
     };
     // A browser has no CommonJS require, module or exports globals.
@@ -88,6 +102,7 @@ for (const mode of ['development', 'production']) {
       throw new Error(`El bundle web no pudo ejecutarse: ${error.message}`);
     }
     const result = await browser.storageResult;
+    assert.match(browser.appMarkup, /Preparando tu espacio financiero/);
     const finances = await browser.clientResult;
     assert.equal(finances.revision, '0');
     assert.equal(finances.snapshot.version, 2);

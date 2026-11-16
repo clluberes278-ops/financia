@@ -16,11 +16,7 @@ import {
 } from 'react-native';
 import { MaterialDesignIcons as MaterialCommunityIcons } from '@react-native-vector-icons/material-design-icons/static';
 import GradientView from './GradientView';
-
-const bottomSheetModule = Platform.OS === 'web' ? null : require('@gorhom/bottom-sheet');
-const BottomSheetModal = bottomSheetModule?.BottomSheetModal ?? null;
-const BottomSheetScrollView = bottomSheetModule?.BottomSheetScrollView ?? ScrollView;
-const BottomSheetBackdrop = bottomSheetModule?.BottomSheetBackdrop ?? View;
+import { BottomSheetModal, BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Category, CATEGORY_LABELS, TransactionType } from '../types/transaction';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -102,8 +98,6 @@ export default function TransactionBottomSheet({
     ),
     []
   );
-
-  if (Platform.OS === 'web') return null;
 
   return (
     <BottomSheetModal

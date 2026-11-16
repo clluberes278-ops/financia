@@ -1,5 +1,13 @@
 # Financia Development Progress & Next Steps
 
+## Corrección del inicio web — 15 de noviembre de 2026
+
+- El error `Cannot read properties of undefined (reading 'Easing')` se reprodujo ejecutando el bundle completo. La compilación por sí sola no lo detectaba.
+- El proveedor y el formulario de bottom sheet se resuelven ahora por plataforma. Android/iOS conservan `@gorhom/bottom-sheet`; la web utiliza su `TransactionModal` existente sin cargar el panel nativo.
+- La prueba de bundle incluye ahora la importación de `App`, su renderizado inicial y una comprobación de que la web no incluye módulos del bottom sheet nativo. No usa cuentas reales ni la configuración de identidad del desarrollador.
+- Validación: ambas pruebas de bundle (desarrollo y producción), TypeScript estricto y bundle JavaScript Android pasaron. La inspección visual automática se detuvo al no poder identificar con confianza la URL del navegador; no se verificó visualmente la sesión del usuario.
+- Esta corrección no activa ni modifica cuentas, Gmail o bases remotas. El plan de conexión vigente está en `backend/CLIENT_CONNECTION.md` y `docs/architecture/migration-plan.md`.
+
 ## Próximos cambios acordados — 30 de octubre de 2026
 
 **Estado:** trabajo aplazado a petición del usuario. Solo se documentan los próximos pasos; no se implementó la lectura de notificaciones ni se cambió la configuración del servidor durante este diagnóstico.
