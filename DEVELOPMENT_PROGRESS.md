@@ -1,5 +1,11 @@
 # Financia Development Progress & Next Steps
 
+## Barra sin actualización manual — 15 de noviembre de 2026
+
+- A petición del usuario, se retiró el botón superior Actualizar y su estado de confirmación manual. Se mantienen la sincronización automática, la hora de la última respuesta correcta y los errores visibles.
+- Confirmar resultado aparece únicamente si hay una escritura pendiente, para resolverla sin duplicados.
+- La app no tiene un botón para iniciar búsquedas nuevas en Gmail. Autorizar Gmail concede acceso; `gmail-poll` es el proceso existente de servidor y su ejecución real sigue pendiente de verificar.
+
 ## Confirmación de Actualizar — 15 de noviembre de 2026
 
 - El botón superior consulta el historial financiero de la API; no ejecuta la consulta de Gmail. Ahora muestra carga y confirma si llegaron cambios o si el historial ya estaba al día.
