@@ -1,5 +1,13 @@
 ﻿# Validación de la migración nativa
 
+## Workspace móvil — 15 de noviembre de 2026
+
+La aplicación actual está en `apps/mobile`, con `com.kal.financia`, React Navigation y React Native CLI conservados. `npm run mobile:config` resuelve los proyectos Android/iOS y las dependencias nativas instaladas en la raíz. El bundle Android se genera con `npm run mobile:bundle:android`.
+
+La variante `preview` incluye JavaScript y usa firma debug para instalarse sin Metro; no es una compilación para tiendas. Los comandos y requisitos están en [móvil](apps/mobile/README.md). La instalación física y la compilación Xcode en macOS requieren verificación específica.
+
+El contenido siguiente corresponde a verificaciones históricas de la migración inicial; no sustituye el estado del workspace descrito arriba.
+
 ## Comprobado
 
 - TypeScript estricto: correcto.

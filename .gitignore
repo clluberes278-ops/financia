@@ -4,7 +4,7 @@
 
 /artifacts/
 /dist-android-check/
-/node_modules/
+**/node_modules/
 /.expo/
 /dist/
 /android/.gradle/
@@ -13,6 +13,20 @@
 /android/local.properties
 /ios/Pods/
 /ios/build/
+/apps/mobile/android/.gradle/
+/apps/mobile/android/.cxx/
+/apps/mobile/android/build/
+/apps/mobile/android/app/.cxx/
+/apps/mobile/android/app/build/
+/apps/mobile/android/local.properties
+/apps/mobile/ios/Pods/
+/apps/mobile/ios/build/
+/apps/mobile/ios/.xcode.env.local
+/apps/mobile/.bundle/
+/apps/mobile/vendor/
+*.jks
+*.keystore
+!/apps/mobile/android/app/debug.keystore
 **/bin/
 **/obj/
 /backend/data/

@@ -26,7 +26,7 @@ function fixture({ start, stop, getAccessToken, buildError = false } = {}) {
     configureLogging(level) { configuration.logLevel = level; return this; }
     build() { if (buildError) throw new Error('private URL/token'); return connection; }
   }
-  const file = path.resolve(__dirname, '../utils/financeRealtime.ts');
+  const file = path.resolve(__dirname, '../apps/mobile/utils/financeRealtime.ts');
   const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;

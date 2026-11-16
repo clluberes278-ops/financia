@@ -2,6 +2,8 @@
 
 Este entorno ejecuta la web actual con Nginx, la API ASP.NET Core 10 y PostgreSQL 18. Docker Desktop debe estar iniciado con contenedores Linux. Solo necesitas Node/npm en el equipo para los comandos auxiliares; el SDK .NET y la compilación web se ejecutan dentro de las imágenes.
 
+La vista web existente reutiliza las fuentes de `apps/mobile` mientras se construye la web independiente. `Dockerfile.web` solo copia los archivos necesarios para esa vista; excluye los proyectos nativos y sus archivos privados. El APK de prueba tiene su propio compilador aislado: `npm run mobile:apk:docker`, descrito en [móvil](../apps/mobile/README.md).
+
 ## Arrancar
 
 1. Conserva en `.env` la URL y clave **pública** del proyecto de identidad que ya utiliza la app (`FINANCIA_SUPABASE_URL` y `FINANCIA_SUPABASE_ANON_KEY`). No se necesitan claves de servicio ni contraseñas de ese proyecto.

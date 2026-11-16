@@ -29,7 +29,7 @@ for (const mode of ['development', 'production']) {
       import AsyncStorage from '@react-native-async-storage/async-storage';
       import { createFinanceClient } from '@financia/api-client';
       import React from 'react';
-      import App from '../../App';
+      import App from '../../apps/mobile/App';
       import { SafeAreaProvider } from 'react-native-safe-area-context';
       import { StyleSheet } from 'react-native';
       import { renderToStaticMarkup } from 'react-dom/server.browser';

@@ -15,7 +15,7 @@ En otra terminal:
 
 ```sh
 npm run android
-# En macOS, primero: bundle install y cd ios && bundle exec pod install
+# En macOS, preparar CocoaPods desde apps/mobile (ver su README)
 npm run ios
 ```
 
@@ -23,7 +23,7 @@ La app se instala directamente en el dispositivo o emulador. Conserva el identif
 
 La firma release se configura con `FINANCIA_RELEASE_STORE_FILE`, `FINANCIA_RELEASE_STORE_PASSWORD`, `FINANCIA_RELEASE_KEY_ALIAS` y `FINANCIA_RELEASE_KEY_PASSWORD` en el entorno de Gradle. Sin ellas, release queda sin firmar; nunca usa automáticamente la clave debug.
 
-Para generar un APK de desarrollo, entra en `android` y ejecuta `./gradlew assembleDebug` (Windows: `./gradlew.bat assembleDebug`). Resultado: `android/app/build/outputs/apk/debug/app-debug.apk`. La variante debug usa Metro. Los artefactos de distribución requieren configurar tu firma de producción; no se incluye ninguna clave privada.
+La aplicación vive en **`apps/mobile`**, un npm workspace que conserva sus pantallas y navegación. Para un APK de prueba con JavaScript incluido, usa `npm run mobile:apk:docker` con Docker Desktop o `npm run mobile:apk:preview` con JDK/SDK locales. `preview` usa firma de desarrollo y funciona sin Metro. `npm run mobile:apk:debug` genera la variante que usa Metro. Para distribución usa los comandos release con tu keystore de producción. Consulta [móvil](apps/mobile/README.md) para rutas, arquitecturas, iOS y configuración de la API.
 
 Guía oficial: https://reactnative.dev/docs/0.86/getting-started-without-a-framework
 
@@ -73,10 +73,9 @@ Se conservan las claves de AsyncStorage y la separación entre cuentas e invitad
 
 ## Estructura
 
-- `index.js` / `index.web.js`: entradas nativa y web.
-- `App.tsx`: navegación React Navigation existente.
-- `android/`, `ios/`: proyectos nativos propios.
-- `screens/`, `components/`, `store/`, `types/`, `utils/`: aplicación existente.
+- `apps/mobile/`: workspace móvil con `App.tsx`, `index.js`, proyectos `android/` e `ios/`, y sus directorios de pantallas, componentes, estado, tipos y utilidades.
+- `index.web.js` y `web/`: vista web existente que todavía reutiliza las pantallas móviles; la web independiente sigue pendiente.
+- `packages/api-client/`: contrato y cliente compartidos.
 - `backend/`: API C# y pruebas de integración.
 
 ## Verificación
@@ -86,7 +85,7 @@ Se conservan las claves de AsyncStorage y la separación entre cuentas e invitad
 Para verificar el bundle Android sin generar APK:
 
 ```sh
-npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output artifacts/android/index.android.bundle --assets-dest artifacts/android --max-workers 2
+npm run mobile:bundle:android
 ```
 
 Las pruebas con datos ficticios y el empaquetado no sustituyen la validación en teléfono. Consulta [ANDROID_VALIDATION.md](ANDROID_VALIDATION.md).

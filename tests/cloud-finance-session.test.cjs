@@ -23,7 +23,7 @@ function loadModules() {
     vm.runInThisContext('(function(require,module,exports){' + code + '\n})', { filename: file })(requireLocal, module, module.exports);
     return module.exports;
   }
-  return { ...load(path.resolve(__dirname, '../utils/cloudFinanceSession.ts')), ...load(path.resolve(__dirname, '../packages/api-client/index.ts')) };
+  return { ...load(path.resolve(__dirname, '../apps/mobile/utils/cloudFinanceSession.ts')), ...load(path.resolve(__dirname, '../packages/api-client/index.ts')) };
 }
 
 const { createCloudFinanceSession, FinanceApiError } = loadModules();

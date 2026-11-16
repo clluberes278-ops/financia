@@ -1,4 +1,2 @@
-module.exports = {
-  presets: ['module:@react-native/babel-preset'],
-  plugins: ['./scripts/public-config-plugin.cjs', 'react-native-worklets/plugin'],
-};
+// The existing web view shares the mobile sources until apps/web is implemented.
+module.exports = require('./apps/mobile/babel.config');

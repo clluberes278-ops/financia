@@ -16,7 +16,7 @@ function fixture(connect) {
   const storage = { getItem: async key => disk.get(key) ?? null, setItem: async (key, value) => { disk.set(key, value); } };
   const cache = new Map();
   function load(relative) {
-    const file = path.resolve(__dirname, '..', relative);
+    const file = path.resolve(__dirname, '../apps/mobile', relative);
     if (cache.has(file)) return cache.get(file).exports;
     const module = { exports: {} }; cache.set(file, module);
     const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
@@ -26,7 +26,7 @@ function fixture(connect) {
       '../utils/connectedFinanceSession': { connectFinanceSession: (...args) => { const session = connect(...args); sessions.push(session); return session; } },
     };
     const requireLocal = name => Object.hasOwn(mocks, name) ? mocks[name] : name.startsWith('.')
-      ? load(path.relative(path.resolve(__dirname, '..'), path.resolve(path.dirname(file), name + (path.extname(name) ? '' : '.ts')))) : require(name);
+      ? load(path.resolve(path.dirname(file), name + (path.extname(name) ? '' : '.ts'))) : require(name);
     vm.runInThisContext('(function(require,module,exports){' + code + '\n})', { filename: file })(requireLocal, module, module.exports);
     return module.exports;
   }

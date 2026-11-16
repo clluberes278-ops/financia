@@ -1,0 +1,15 @@
+pluginManagement { includeBuild("../../../node_modules/@react-native/gradle-plugin") }
+plugins { id("com.facebook.react.settings") }
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+    // Resolve the installed CLI directly; do not let npx download another version.
+    ex.autolinkLibrariesFromCommand(
+        ["node", file("../../../node_modules/react-native/cli.js").absolutePath, "config"],
+        file(".."),
+        settings.layout.rootDirectory.files(
+            "../package.json", "../../../package-lock.json", "../react-native.config.js"
+        )
+    )
+}
+rootProject.name = 'Financia'
+include ':app'
+includeBuild('../../../node_modules/@react-native/gradle-plugin')

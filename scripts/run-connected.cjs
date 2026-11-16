@@ -14,6 +14,7 @@ async function main() {
   const environment = { ...process.env };
   let entry;
   let args;
+  let workingDirectory = root;
   if (mode === 'api') {
     const identityUrl = environment.Authentication__SupabaseUrl || environment.FINANCIA_SUPABASE_URL || config.FINANCIA_SUPABASE_URL;
     const publicKey = environment.Authentication__PublishableKey || environment.FINANCIA_SUPABASE_ANON_KEY || config.FINANCIA_SUPABASE_ANON_KEY;
@@ -32,6 +33,7 @@ async function main() {
   } else {
     environment.FINANCIA_API_URL = mode === 'android' ? 'http://10.0.2.2:5080' : 'http://127.0.0.1:5080';
     entry = mode === 'web' ? require.resolve('webpack-cli/bin/cli.js') : path.join(root, 'node_modules/react-native/cli.js');
+    if (mode === 'android') workingDirectory = path.join(root, 'apps/mobile');
     args = mode === 'web' ? ['serve', '--mode', 'development'] : ['run-android'];
     if (mode === 'web') {
       const extra = process.argv.slice(3);
@@ -42,7 +44,7 @@ async function main() {
   }
   // Foreground terminal process. No credentials are printed or embedded beyond the existing public-config allowlist.
   const result = spawnSync(process.execPath, [entry, ...args, ...process.argv.slice(3)], {
-    cwd: root, stdio: 'inherit', env: environment, windowsHide: true,
+    cwd: workingDirectory, stdio: 'inherit', env: environment, windowsHide: true,
   });
   if (result.error) console.error(result.error.message);
   process.exit(result.status ?? 1);

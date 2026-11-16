@@ -1,6 +1,6 @@
 import { AppRegistry } from 'react-native';
-import App from './App';
-import { name } from './app.json';
+import App from './apps/mobile/App';
+import { name } from './apps/mobile/app.json';
 
 const font = new FontFace('MaterialDesignIcons', `url(${new URL('@react-native-vector-icons/material-design-icons/fonts/MaterialDesignIcons.ttf', import.meta.url)})`);
 document.fonts.add(font);

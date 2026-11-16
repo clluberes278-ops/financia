@@ -4,11 +4,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const ts = require('typescript');
+const root = path.resolve(__dirname, '..');
+const mobileRoot = path.join(root, 'apps/mobile');
 // TypeScript en memoria, almacenamiento ficticio y ninguna conexión de red.
 function loader(mocks = {}) {
   const cache = new Map();
   function load(file) {
-    file = path.resolve(__dirname, '..', file);
+    file = path.isAbsolute(file) ? file : path.resolve(file.startsWith('packages/') ? root : mobileRoot, file);
     if (!path.extname(file)) file += '.ts';
     if (file.endsWith('.json')) return JSON.parse(fs.readFileSync(file, 'utf8'));
     if (cache.has(file)) return cache.get(file).exports;
@@ -17,7 +19,7 @@ function loader(mocks = {}) {
     const localRequire = name => {
       if (Object.hasOwn(mocks, name)) return mocks[name];
       if (name === '@financia/api-client') return load('packages/api-client/index.ts');
-      if (name.startsWith('.')) return load(path.relative(path.resolve(__dirname, '..'), path.resolve(path.dirname(file), name)));
+      if (name.startsWith('.')) return load(path.resolve(path.dirname(file), name));
       return require(name);
     };
     vm.runInThisContext('(function(require,module,exports){' + code + '\n})', { filename: file })(localRequire, module, module.exports);

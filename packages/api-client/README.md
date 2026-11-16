@@ -82,4 +82,4 @@ Las URLs exigen HTTPS, excepto HTTP en `localhost`, `127.0.0.1`, `[::1]` y `10.0
 
 ## Pendiente de integración
 
-Este paquete cubre HTTP. La app implementa SignalR y recuperación en `utils/financeRealtime.ts`, y el registro durable de comandos por cuenta en `utils/cloudFinanceSession.ts`. No hay caché de lectura offline para cuentas conectadas. La web React DOM independiente aún debe integrarse. El backend v2 sigue desactivado por defecto y conserva el límite de una instancia para notificaciones hasta añadir un transporte compartido.
+Este paquete cubre HTTP. La app implementa SignalR y recuperación en `apps/mobile/utils/financeRealtime.ts`, y el registro durable de comandos por cuenta en `apps/mobile/utils/cloudFinanceSession.ts`. No hay caché de lectura offline para cuentas conectadas. La web React DOM independiente aún debe integrarse. El backend v2 sigue desactivado por defecto y conserva el límite de una instancia para notificaciones hasta añadir un transporte compartido.

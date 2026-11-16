@@ -1,0 +1,36 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "types": [
+      "react",
+      "node"
+    ],
+    "moduleSuffixes": [
+      ".native",
+      ""
+    ],
+    "skipLibCheck": true
+  },
+  "include": [
+    "App.tsx",
+    "components/**/*.tsx",
+    "screens/**/*.tsx",
+    "store/**/*.ts",
+    "types/**/*.ts",
+    "utils/**/*.ts",
+    "../../packages/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "supabase",
+    "artifacts",
+    "backend"
+  ]
+}

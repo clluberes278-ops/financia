@@ -8,7 +8,7 @@ module.exports = (_env, argv) => ({
   resolve: {
     alias: {
       'react-native$': 'react-native-web',
-      '@react-native-vector-icons/material-design-icons/static$': path.resolve(__dirname, 'components/MaterialDesignIcons.web.tsx'),
+      '@react-native-vector-icons/material-design-icons/static$': path.resolve(__dirname, 'apps/mobile/components/MaterialDesignIcons.web.tsx'),
     },
     extensions: ['.web.tsx', '.web.ts', '.web.js', '.tsx', '.ts', '.js', '.json'],
   },
@@ -25,7 +25,7 @@ module.exports = (_env, argv) => ({
   ] },
   plugins: [
     new webpack.NormalModuleReplacementPlugin(/LinearGradient$/, resource => {
-      if (resource.context.includes('react-native-gifted-charts')) resource.request = path.resolve(__dirname, 'components/GradientView.web.tsx');
+      if (resource.context.includes('react-native-gifted-charts')) resource.request = path.resolve(__dirname, 'apps/mobile/components/GradientView.web.tsx');
     }),
     new webpack.DefinePlugin({ __DEV__: JSON.stringify(argv.mode !== 'production') }),
     new HtmlWebpackPlugin({ template: 'web/index.html' }),
