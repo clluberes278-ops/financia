@@ -111,9 +111,51 @@ test('an event arriving during refresh triggers another read without concurrent 
   const second = f.store.getState().refresh();
   assert.equal(reads, 1);
   reading.resolve(cloudState({ revision: '2' }));
-  await Promise.all([first, second]);
+  assert.deepEqual(await Promise.all([first, second]), [true, true]);
   assert.equal(reads, 2);
   assert.equal(f.store.getState().cloudRevision, '3');
+});
+
+test('manual refresh acknowledges unchanged history, preserves the confirmed time on failure and recovers', async () => {
+  let fail = false;
+  let reads = 0;
+  const confirmed = cloudState({ snapshot: { ...snapshot(), transactions: [movement('confirmed')] } });
+  const f = fixture(() => session({ load: async () => confirmed, refresh: async () => {
+    reads++;
+    if (fail) throw new Error('API no disponible');
+    return confirmed;
+  } }));
+  await f.store.getState().activateOwner('guest');
+  assert.equal(await f.store.getState().refresh(), false);
+  assert.equal(f.store.getState().lastSyncedAt, null);
+  await f.store.getState().activateOwner('user:alice');
+  assert.equal(typeof f.store.getState().lastSyncedAt, 'number');
+  assert.equal(await f.store.getState().refresh(), true);
+  const lastSuccess = f.store.getState().lastSyncedAt;
+  fail = true;
+  assert.equal(await f.store.getState().refresh(), false);
+  assert.equal(f.store.getState().lastSyncedAt, lastSuccess);
+  assert.equal(f.store.getState().transactions[0].id, 'confirmed');
+  assert.match(f.store.getState().error, /API no disponible/);
+  assert.equal(f.store.getState().isSyncing, false);
+  fail = false;
+  assert.equal(await f.store.getState().refresh(), true);
+  assert.equal(f.store.getState().error, null);
+  assert.equal(reads, 3);
+});
+
+test('a refresh finishing after account change cannot acknowledge success or update the new owner time', async () => {
+  const reading = deferred();
+  const f = fixture(() => session({ refresh: () => reading.promise }));
+  await f.store.getState().activateOwner('user:alice');
+  const result = f.store.getState().refresh();
+  await Promise.resolve();
+  assert.equal(f.store.getState().isSyncing, true);
+  await f.store.getState().activateOwner('guest');
+  reading.resolve(cloudState());
+  assert.equal(await result, false);
+  assert.equal(f.store.getState().lastSyncedAt, null);
+  assert.equal(f.store.getState().owner, 'guest');
 });
 
 test('uncertain writes expose a pending operation and retry resolves it using the cloud journal', async () => {

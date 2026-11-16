@@ -25,7 +25,8 @@ interface FinanceStore extends FinancialSnapshot {
   cloudRevision: string | null;
   migration: MigrationInfo | null;
   pendingOperation: boolean;
-  refresh: () => Promise<void>;
+  lastSyncedAt: number | null;
+  refresh: () => Promise<boolean>;
   activateCloud: (startEmpty?: boolean) => Promise<void>;
   retryPending: () => Promise<void>;
   setSyncStatus: (owner: string, status: FinanceRealtimeStatus) => void;
@@ -43,12 +44,12 @@ interface FinanceStore extends FinancialSnapshot {
 }
 export const useFinanceStore = create<FinanceStore>((set, get) => {
   let cloud: ReturnType<typeof connectFinanceSession> | null = null;
-  let refreshTask: Promise<void> | null = null;
+  let refreshTask: Promise<boolean> | null = null;
   let refreshAgain = false;
   let busy = 0;
   function applyCloud(state: CloudFinanceState): void {
     set({ ...state.snapshot, cloudRevision: state.revision, migration: state.migration,
-      pendingOperation: state.pending, isLoaded: true, error: null });
+      pendingOperation: state.pending, isLoaded: true, error: null, lastSyncedAt: Date.now() });
   }
   async function cloudWork(work: (session: NonNullable<typeof cloud>) => Promise<CloudFinanceState>): Promise<void> {
     const session = cloud;
@@ -108,7 +109,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => {
   }
   return {
     ...emptySnapshot(), owner: null, isLoaded: false, error: null, hasLegacyData: false,
-    syncMode: 'local', syncStatus: 'local', isSyncing: false, cloudRevision: null, migration: null, pendingOperation: false,
+    syncMode: 'local', syncStatus: 'local', isSyncing: false, cloudRevision: null, migration: null, pendingOperation: false, lastSyncedAt: null,
     setSyncStatus: (owner, status) => { if (get().owner === owner && cloud) set({ syncStatus: status }); },
     setSyncError: (owner, error) => { if (get().owner === owner && cloud) set({ error }); },
     activateCloud: async (startEmpty = false) => {
@@ -128,7 +129,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => {
     },
     retryPending: () => cloudWork(session => session.retryPending()),
     refresh: () => {
-      if (!cloud || !get().isLoaded) return Promise.resolve();
+      if (!cloud || !get().isLoaded) return Promise.resolve(false);
       refreshAgain = true;
       if (refreshTask) return refreshTask;
       const startedEpoch = epoch;
@@ -138,7 +139,11 @@ export const useFinanceStore = create<FinanceStore>((set, get) => {
             refreshAgain = false;
             await cloudWork(session => session.refresh());
           }
-        } catch { /* cloudWork exposes refresh failures in the visible connection status. */ }
+          return startedEpoch === epoch && cloud !== null;
+        } catch {
+          // cloudWork exposes failures in the visible connection status.
+          return false;
+        }
         finally { if (startedEpoch === epoch) refreshTask = null; }
       });
       refreshTask = task;
@@ -152,7 +157,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => {
       refreshTask = null; refreshAgain = false; busy = 0;
       const connected = !!financeApiUrl && owner.startsWith('user:');
       set({ ...emptySnapshot(), owner, isLoaded: false, error: null, hasLegacyData: false, migration: null, pendingOperation: false,
-        syncMode: connected ? 'cloud' : 'local', syncStatus: connected ? 'connecting' : 'local', isSyncing: false, cloudRevision: null });
+        syncMode: connected ? 'cloud' : 'local', syncStatus: connected ? 'connecting' : 'local', isSyncing: false, cloudRevision: null, lastSyncedAt: null });
       try {
         if (connected) {
           const session = connectFinanceSession(owner, AsyncStorage, localRepository.read, newId);

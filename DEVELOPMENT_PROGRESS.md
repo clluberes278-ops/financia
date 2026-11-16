@@ -1,5 +1,11 @@
 # Financia Development Progress & Next Steps
 
+## Confirmación de Actualizar — 15 de noviembre de 2026
+
+- El botón superior consulta el historial financiero de la API; no ejecuta la consulta de Gmail. Ahora muestra carga y confirma si llegaron cambios o si el historial ya estaba al día.
+- Se muestra la hora de la última respuesta financiera correcta. Una petición fallida conserva la hora anterior y su error visible, sin mostrar una confirmación falsa. Al cambiar de cuenta se limpia ese estado y se ignoran respuestas tardías.
+- Validación: TypeScript estricto y 24 pruebas de estado/persistencia, incluidos fallos, reintentos y cambios de propietario. La web se reconstruye en Docker; no se automatizó una sesión visual autenticada.
+
 ## Entorno Docker — 15 de noviembre de 2026
 
 - Web compilada con Nginx en 8080, API C# en 5081 y PostgreSQL 18 sin puerto de base expuesto. `npm run docker:up` construye y arranca el entorno; `docker:stop` conserva el volumen. Ver `backend/DOCKER.md`.
