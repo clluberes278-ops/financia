@@ -1,6 +1,6 @@
 # Registro automático y manual de movimientos
 
-Estado: requisito incorporado a la arquitectura; integración con la API v2 pendiente de implementación. La existencia de código Gmail no demuestra que OAuth, funciones y programación periódica estén desplegados o activos.
+Estado: pendiente final por petición del usuario el 15 de noviembre de 2026. La API v2 ya acepta lotes de movimientos recogidos por el cliente; falta completar y verificar el procesamiento autónomo de Gmail hasta la persistencia financiera. La existencia de código Gmail no demuestra que OAuth, funciones y programación periódica estén desplegados o activos.
 
 ## Comportamiento del producto
 

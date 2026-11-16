@@ -1,5 +1,11 @@
 # Financia Development Progress & Next Steps
 
+## Orden pendiente acordado — 15 de noviembre de 2026
+
+- Gmail y el registro automático se dejan para el final por petición del usuario.
+- Antes: validar operaciones/concurrencia PostgreSQL; extraer dominio compartido; construir la web React DOM independiente; organizar el móvil en el monorepo; comprobar web/teléfono y automatizar checks; preparar despliegue HTTPS y recuperación.
+- Se empieza desde cero con PostgreSQL. No hace falta migrar el historial anterior. El orden y los límites de lo ya verificado están en `docs/architecture/migration-plan.md`.
+
 ## Barra sin actualización manual — 15 de noviembre de 2026
 
 - A petición del usuario, se retiró el botón superior Actualizar y su estado de confirmación manual. Se mantienen la sincronización automática, la hora de la última respuesta correcta y los errores visibles.
