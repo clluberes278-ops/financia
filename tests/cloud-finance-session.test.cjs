@@ -105,6 +105,24 @@ function fixture({ remote = remoteEmpty('1'), local = empty(), legacy = { revisi
   return { state, disk, calls, storage, make, client };
 }
 
+test('a new cloud account can explicitly start empty without importing its local history', async () => {
+  const local = { ...empty(), transactions: [legacyMovement('old-local')] };
+  const f = fixture({ remote: remoteEmpty('0'), local });
+  const session = f.make();
+  assert.equal((await session.load()).migration.source, 'local');
+  const result = await session.activate(true);
+  assert.equal(result.revision, '1');
+  assert.deepEqual(result.snapshot, empty());
+  assert.deepEqual(f.calls.find(item => item.method === 'importLegacy').args[0], { expectedRevision: '0', snapshot: empty() });
+  assert.equal(local.transactions[0].id, 'old-local');
+
+  const existing = fixture({ remote: remoteEmpty('0'), legacy: { revision: 1, snapshot: local } });
+  const existingSession = existing.make();
+  await existingSession.load();
+  await assert.rejects(existingSession.activate(true), /ya tiene historial en el servidor/);
+  assert.equal(existing.calls.some(item => item.method === 'importLegacy'), false);
+});
+
 test('cloud migration is explicit, previews counts, prioritizes server and keeps local history untouched', async () => {
   const original = { ...empty(), transactions: [legacyMovement('local-only')] };
   const historical = { ...empty(), transactions: [legacyMovement('server-only')] };

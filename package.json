@@ -19,6 +19,13 @@
     "api:connected": "node scripts/run-connected.cjs api",
     "web:connected": "node scripts/run-connected.cjs web",
     "android:connected": "node scripts/run-connected.cjs android",
+    "docker:up": "node scripts/run-docker.cjs up",
+    "docker:stop": "node scripts/run-docker.cjs stop",
+    "docker:logs": "node scripts/run-docker.cjs logs",
+    "docker:status": "node scripts/run-docker.cjs status",
+    "docker:check": "node scripts/run-docker.cjs config",
+    "docker:lint": "node scripts/run-docker.cjs lint",
+    "docker:verify": "node scripts/run-docker.cjs verify",
     "api:generate": "node scripts/refresh-api-client.cjs",
     "api:check": "node scripts/refresh-api-client.cjs --check",
     "typecheck:client": "tsc --noEmit --project packages/api-client/tsconfig.json"

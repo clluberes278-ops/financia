@@ -43,9 +43,13 @@ FINANCIA_API_URL=
 
 El compilador incorpora exclusivamente estas tres variables. Nunca pongas claves de servicio, contraseñas o secretos OAuth en ellas. Reinicia Metro/webpack cuando cambies `.env`; si reutiliza caché, ejecuta `npm start -- --reset-cache`.
 
+La variable `FINANCIA_SUPABASE_ANON_KEY` acepta una clave pública `sb_publishable_...` o la clave legacy con rol `anon`. El build rechaza claves privilegiadas y tokens de usuario. Es una protección contra errores de configuración; la clave pública sigue siendo visible en los clientes compilados.
+
 Google/Apple siguen usando el proveedor de identidad existente. Permite `financia://auth/callback` y el origen web en sus URLs de retorno. Los archivos nativos registran el esquema. La integración Gmail existente se documenta en [backend/GMAIL_EXISTING.md](backend/GMAIL_EXISTING.md).
 
 ## Backend C#
+
+Para ejecutar **web + API + PostgreSQL con Docker Desktop**: detén el webpack anterior y ejecuta `npm run docker:up`. Abre http://127.0.0.1:8080. `npm run docker:verify` comprueba el entorno y `npm run docker:stop` lo detiene conservando el volumen. La base Docker es nueva y no copia automáticamente SQLite. Consulta [desarrollo con Docker](backend/DOCKER.md).
 
 ```sh
 npm run api:start

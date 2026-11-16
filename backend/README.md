@@ -4,6 +4,8 @@ ASP.NET Core 10 y Entity Framework Core. Guarda movimientos y bolsillos juntos p
 
 ## Ejecutar
 
+Alternativa con Docker Desktop: `npm run docker:up` inicia web, API y un PostgreSQL local con volumen persistente; `npm run docker:verify` comprueba su estado. La API Docker usa el puerto **5081** y una base nueva, separada del atajo SQLite del puerto 5080. Consulta [Docker](DOCKER.md) antes de cambiar de entorno con historial existente.
+
 Desde la raíz: `npm run api:start`. Requiere SDK .NET 10; el script también detecta el SDK local en `artifacts/dotnet` preparado durante la migración.
 
 En desarrollo escucha en `http://localhost:5080`. SQLite permite trabajar sin instalar un servidor de bases de datos. El archivo `backend/Financia.Api/financia.db` no se versiona. Para PostgreSQL configura `ConnectionStrings__Postgres` en el entorno del servidor. No cambies de proveedor esperando que los datos se transfieran automáticamente.

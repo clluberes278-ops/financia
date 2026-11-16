@@ -1,0 +1,9 @@
+**
+!Financia.Api/
+!Financia.Api/**/
+!Financia.Api/**/*.cs
+!Financia.Api/*.csproj
+!Financia.Api/packages.lock.json
+!Financia.Api/appsettings.json
+**/bin/
+**/obj/

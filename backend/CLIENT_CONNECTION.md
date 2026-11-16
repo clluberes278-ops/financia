@@ -4,6 +4,8 @@ La app actual (React Native CLI y su vista web existente) ya usa `@financia/api-
 
 ## Activar en desarrollo
 
+También puedes ejecutar el entorno completo con `npm run docker:up`: web en 8080, API en **5081** y PostgreSQL persistente. Detén el webpack anterior para liberar 8080. Esta base no contiene el historial del atajo SQLite: consulta [Docker](DOCKER.md) antes de cambiar de entorno.
+
 Atajo local con la URL y clave pública de Supabase ya configuradas en `.env`: en una terminal ejecuta `npm run api:connected` y en otra `npm run web:connected` (o `npm run android:connected`). No modifica `.env`: la API usa una base aislada en `artifacts/connected-dev.db` y el cliente recibe la dirección local correspondiente. La primera conexión sigue requiriendo confirmación en la app. Detén cualquier webpack/Metro anterior antes de usar estos comandos para no reutilizar un bundle con la configuración previa.
 
 Para configurar manualmente un backend local distinto o un despliegue, sigue estos pasos:
@@ -40,6 +42,7 @@ Para configurar manualmente un backend local distinto o un despliegue, sigue est
 - Si v2 ya tiene datos, carga ese historial directamente.
 - Si v2 está vacía y existe historial v1 en el servidor, se muestra el conteo y se importa esa revisión explícita. La copia local permanece separada.
 - Si no hay historial del servidor, se ofrece la copia local asociada a ese UUID de usuario, o un espacio vacío si no existe.
+- Si hay copia local pero quieres comenzar vacío, elige **Empezar desde cero sin importar la copia local**. Esta opción no reemplaza historial que ya exista en el servidor.
 - Los datos sin propietario del formato antiguo y los del invitado nunca se asignan automáticamente a una cuenta.
 - Sin URL de API, o como invitado, se conserva el almacenamiento local existente.
 - Configurar una URL y encontrar un fallo de red no activa un modo local silencioso para la cuenta autenticada.

@@ -315,13 +315,16 @@ export function createCloudFinanceSession(options: Options) {
   }
   return {
     load: () => enqueue(load), refresh: () => enqueue(load), run,
-    activate: () => enqueue(async () => {
+    activate: (startEmpty = false) => enqueue(async () => {
       await restorePending();
       if (hasPending()) throw invalid('Hay una activación u operación pendiente. Reinténtala para confirmar su resultado.');
       if (!current) await load();
       if (current?.revision !== '0') return state();
       candidate ??= await chooseCandidate();
-      return persist({ method: 'importLegacy', request: candidate.request }, true);
+      if (startEmpty && candidate.info.source === 'server')
+        throw invalid('Esta cuenta ya tiene historial en el servidor. Conéctala antes de restablecer sus datos.');
+      const request: ImportLegacyRequest = startEmpty ? { expectedRevision: '0', snapshot: emptySnapshot() } : candidate.request;
+      return persist({ method: 'importLegacy', request }, true);
     }),
     retryPending: () => enqueue(retry),
     importBankTransactions: (data: Transaction[]) => run({ type: 'importBankTransactions', data }),

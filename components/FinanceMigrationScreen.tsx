@@ -28,6 +28,12 @@ export default function FinanceMigrationScreen() {
         onPress={() => { void (finance.pendingOperation ? finance.retryPending() : finance.activateCloud()).catch(() => { /* Visible store error below. */ }); }}>
         {finance.isSyncing ? <ActivityIndicator color="#FFFFFF" /> : <ThemedText style={styles.buttonText}>{finance.pendingOperation ? 'Confirmar operación pendiente' : 'Conectar esta cuenta'}</ThemedText>}
       </Pressable>
+      {migration?.source === 'local' && !finance.pendingOperation ? (
+        <Pressable accessibilityRole="button" disabled={finance.isSyncing} style={[styles.button, { borderWidth: 1, borderColor: theme.border }]}
+          onPress={() => { void finance.activateCloud(true).catch(() => { /* Visible store error below. */ }); }}>
+          <ThemedText style={{ color: settings.accentColor }}>Empezar desde cero sin importar la copia local</ThemedText>
+        </Pressable>
+      ) : null}
       {finance.error ? <ThemedText style={[styles.text, { color: theme.expense }]}>{finance.error}</ThemedText> : null}
       {auth.error ? <ThemedText style={[styles.text, { color: theme.expense }]}>{auth.error}</ThemedText> : null}
       <Pressable accessibilityRole="button" style={styles.button} onPress={() => void auth.signOut()}>

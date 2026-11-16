@@ -1,5 +1,14 @@
 # Financia Development Progress & Next Steps
 
+## Entorno Docker — 15 de noviembre de 2026
+
+- Web compilada con Nginx en 8080, API C# en 5081 y PostgreSQL 18 sin puerto de base expuesto. `npm run docker:up` construye y arranca el entorno; `docker:stop` conserva el volumen. Ver `backend/DOCKER.md`.
+- Se acordó empezar desde cero sin migrar el historial anterior. La preparación de una cuenta permite omitir su copia local; la identidad existente se conserva.
+- Se confirmó que el motor Docker apagado causaba los rechazos de conexión a 5081 aunque el navegador conservara la página cargada. Se añadieron arranque de Docker Desktop desde el comando de Windows y reinicio de servicios cuando vuelve el motor.
+- Se añadió un diagnóstico legible de puerto ocupado para evitar abrir dos servidores en 8080. La web de Docker reemplaza al webpack local mientras esté activa.
+- Una revisión independiente confirmó que la clave pública de Supabase no debe confundirse con claves privilegiadas. Se reemplazó su ARG/ENV por un montaje temporal BuildKit, se añadió una guardia de configuración para todos los bundles y una huella para invalidar la caché. `npm run docker:lint` finalizó sin avisos en ambos Dockerfiles.
+- Validación: imágenes web/API construidas, tres servicios saludables, comprobaciones HTTP/CORS/401 y seis tablas v2 verificadas en PostgreSQL; las 68 pruebas JavaScript pasaron, incluidos los bundles de desarrollo/producción y la protección de claves, junto con TypeScript estricto. La imagen web no conserva la variable de clave en su entorno. No se realizó una prueba OAuth automatizada ni una inspección visual del navegador.
+
 ## Corrección del inicio web — 15 de noviembre de 2026
 
 - El error `Cannot read properties of undefined (reading 'Easing')` se reprodujo ejecutando el bundle completo. La compilación por sí sola no lo detectaba.

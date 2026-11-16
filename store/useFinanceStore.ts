@@ -26,7 +26,7 @@ interface FinanceStore extends FinancialSnapshot {
   migration: MigrationInfo | null;
   pendingOperation: boolean;
   refresh: () => Promise<void>;
-  activateCloud: () => Promise<void>;
+  activateCloud: (startEmpty?: boolean) => Promise<void>;
   retryPending: () => Promise<void>;
   setSyncStatus: (owner: string, status: FinanceRealtimeStatus) => void;
   setSyncError: (owner: string, error: string) => void;
@@ -111,10 +111,10 @@ export const useFinanceStore = create<FinanceStore>((set, get) => {
     syncMode: 'local', syncStatus: 'local', isSyncing: false, cloudRevision: null, migration: null, pendingOperation: false,
     setSyncStatus: (owner, status) => { if (get().owner === owner && cloud) set({ syncStatus: status }); },
     setSyncError: (owner, error) => { if (get().owner === owner && cloud) set({ error }); },
-    activateCloud: async () => {
+    activateCloud: async (startEmpty = false) => {
       const session = cloud;
       const startedEpoch = epoch;
-      try { await cloudWork(current => current.activate()); }
+      try { await cloudWork(current => current.activate(startEmpty)); }
       catch (error: unknown) {
         // A rejected migration can mean another device changed its source. Refresh the
         // preview before the user confirms again; never silently switch the proposed source.
