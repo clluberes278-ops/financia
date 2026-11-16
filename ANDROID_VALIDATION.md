@@ -1,5 +1,15 @@
 ﻿# Validación de la migración nativa
 
+## APK del workspace — 16 de noviembre de 2026
+
+- `npm run mobile:apk:docker` completó `assemblePreview` con 625 tareas. Se usaron Node, JDK 17, SDK/NDK oficiales y React Native CLI, sin Expo.
+- Se corrigió la resolución de `hermes-compiler` desde el `node_modules` raíz para el monorepo; Windows selecciona `.exe` y RNGP sustituye `%OS-BIN%` según el host.
+- Archivo: `artifacts/android-preview/financia-preview.apk`, ARM64, 40.134.860 bytes. Su firma debug pasó `apksigner verify`.
+- El ZIP contiene `assets/index.android.bundle` (4.150.556 bytes de bytecode), `lib/arm64-v8a/libhermesvm.so` y las bibliotecas nativas. No necesita Metro para cargar ese bundle.
+- El SHA-256 calculado en Windows coincide con el generado en Docker: `478ae84f2f5f050b914a844765f3ff96b712ea0a6b3e73457e482dedc930d165`.
+- Pruebas del traslado: 71 JavaScript, 63 C#, TypeScript estricto, bundles web y Android y autolinking. La prueba de configuración nativa y TypeScript se repitieron tras el ajuste de Hermes.
+- Sigue pendiente instalar y probar en un Android físico. El APK de esta validación usa almacenamiento local; compartir datos desde el teléfono requiere una URL de API accesible. No es un release firmado para tiendas. iOS se aplaza porque no hay Mac disponible.
+
 ## Workspace móvil — 15 de noviembre de 2026
 
 La aplicación actual está en `apps/mobile`, con `com.kal.financia`, React Navigation y React Native CLI conservados. `npm run mobile:config` resuelve los proyectos Android/iOS y las dependencias nativas instaladas en la raíz. El bundle Android se genera con `npm run mobile:bundle:android`.

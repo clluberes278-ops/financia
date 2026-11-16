@@ -42,8 +42,10 @@ react {
     // extraPackagerArgs = []
 
     /* Hermes Commands */
-    //   The hermes compiler command to run. By default it is 'hermesc'
-    // hermesCommand = "$rootDir/my-custom-hermesc/bin/hermesc"
+    // RNGP's default lookup starts at apps/mobile/node_modules. The compiler supplied
+    // by this React Native version is hoisted; RNGP expands %OS-BIN% for the build host.
+    def hermesExecutable = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows") ? "hermesc.exe" : "hermesc"
+    hermesCommand = file("../../../../node_modules/hermes-compiler/hermesc/%OS-BIN%/${hermesExecutable}").absolutePath
     //
     //   The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
     // hermesFlags = ["-O", "-output-source-map"]

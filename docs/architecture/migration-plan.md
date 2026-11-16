@@ -1,6 +1,6 @@
 # Migración a web y móvil independientes
 
-Estado actualizado al 15 de noviembre de 2026. Este documento distingue la implementación existente del trabajo pendiente; no mueve archivos por sí mismo.
+Estado actualizado al 16 de noviembre de 2026. Este documento distingue la implementación existente del trabajo pendiente; no mueve archivos por sí mismo.
 
 Implementado: esquema normalizado con migraciones EF, importación/lectura v2, movimientos, bolsillos, recibos y SignalR con outbox. La app actual está integrada mediante el cliente compartido: activación explícita, comandos pendientes durables por cuenta y recuperación del estado. Consulta [conexión de la app](../../backend/CLIENT_CONNECTION.md). Ninguna cuenta real se ha migrado y el servidor sigue requiriendo activar v2 explícitamente.
 
@@ -11,7 +11,7 @@ El [cliente HTTP compartido](../../packages/api-client/README.md) ya lo utiliza 
 1. Completar las pruebas de operaciones financieras, aislamiento, idempotencia y concurrencia contra PostgreSQL real. Las pruebas actuales con SQLite y las comprobaciones de arranque Docker no cubren todo ese comportamiento.
 2. Extraer a `packages/domain` los tipos y cálculos independientes de plataforma que usarán ambos clientes.
 3. Crear `apps/web` con React DOM, TypeScript y Vite: diseño propio para escritorio y móvil, acceso, panel, movimientos, bolsillos, informes y ajustes. Reutilizar la API y el cliente compartido.
-4. **Traslado implementado:** `apps/mobile` con React Navigation y React Native CLI, sin Expo; Metro/Babel, Gradle, CocoaPods, workspaces y scripts ajustados. La instalación y validación en un teléfono y la compilación iOS en macOS siguen siendo comprobaciones separadas; ver [móvil](../../apps/mobile/README.md).
+4. **Android implementado y compilado:** `apps/mobile` con React Navigation y React Native CLI, sin Expo; Metro/Babel, Gradle, CocoaPods, workspaces y scripts ajustados. APK preview ARM64 generado y verificado, con firma de desarrollo y bundle Hermes incluido. Falta la prueba física en Android. La compilación iOS queda aplazada por falta de Mac; ver [móvil](../../apps/mobile/README.md) y [validación](../../ANDROID_VALIDATION.md).
 5. Verificar el recorrido completo web/teléfono con la misma cuenta: escrituras simultáneas, cambios visibles, reconexión, errores y cambio de propietario. Completar las funciones de interfaz que falten y automatizar los checks en GitHub.
 6. Preparar el despliegue con HTTPS, migraciones explícitas, copias de seguridad y comprobación de recuperación. Docker local no equivale a un despliegue público.
 7. Al final, completar y verificar la búsqueda y registro automático desde Gmail para BHD, Popular y Banreservas, con formatos reales validados, deduplicación y estados claros. Una autorización Gmail no demuestra una búsqueda completada.

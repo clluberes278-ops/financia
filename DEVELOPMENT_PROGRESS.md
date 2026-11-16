@@ -1,5 +1,14 @@
 # Financia Development Progress & Next Steps
 
+## Parte 4: Android en el monorepo — 16 de noviembre de 2026
+
+- El móvil vive en `apps/mobile`, con React Native CLI y React Navigation; se conservan `com.kal.financia`, el retorno OAuth y los directorios funcionales. La separación ya está versionada en el commit `cd424432`.
+- Se corrigió la ruta de Hermes para dependencias hoisted: Gradle busca explícitamente el compilador de la versión instalada, con selección de ejecutable por sistema operativo.
+- APK preview ARM64 generado en Docker: `artifacts/android-preview/financia-preview.apk` (40.134.860 bytes). Firma de desarrollo verificada con `apksigner`; contiene el bundle Hermes y `libhermesvm.so`. SHA-256: `478ae84f2f5f050b914a844765f3ff96b712ea0a6b3e73457e482dedc930d165`.
+- Validación del traslado: 71 pruebas JavaScript, 63 pruebas C#, TypeScript estricto, bundles web/Android, autolinking y entorno Docker HTTP/CORS. El empaquetado nativo terminó con `BUILD SUCCESSFUL` y 625 tareas ejecutadas.
+- El APK actual usa almacenamiento local porque la URL de API móvil está vacía. Para compartir datos con la web desde un teléfono físico hace falta configurar una API HTTPS accesible y recompilar. No se ha instalado ni probado en un teléfono durante esta validación.
+- Android es la prioridad actual. El usuario no dispone de Mac; la compilación y validación iOS quedan aplazadas, sin bloquear Android. Gmail sigue al final del plan.
+
 ## Orden pendiente acordado — 15 de noviembre de 2026
 
 - Gmail y el registro automático se dejan para el final por petición del usuario.
