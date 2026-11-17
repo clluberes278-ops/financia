@@ -1,6 +1,6 @@
 # Migración a web y móvil independientes
 
-Estado actualizado al 16 de noviembre de 2026. Este documento distingue la implementación existente del trabajo pendiente; no mueve archivos por sí mismo.
+Estado actualizado al 17 de noviembre de 2026. Este documento distingue la implementación existente del trabajo pendiente; no mueve archivos por sí mismo.
 
 Implementado: esquema normalizado con migraciones EF, importación/lectura v2, movimientos, bolsillos, recibos y SignalR con outbox. La app actual está integrada mediante el cliente compartido: activación explícita, comandos pendientes durables por cuenta y recuperación del estado. Consulta [conexión de la app](../../backend/CLIENT_CONNECTION.md). Ninguna cuenta real se ha migrado y el servidor sigue requiriendo activar v2 explícitamente.
 
@@ -21,6 +21,10 @@ Se acordó empezar con la base PostgreSQL nueva, sin migrar el historial antiguo
 El contrato y los endpoints están descritos en [Contrato inicial del backend](backend-contract.md); el estado implementado se detalla en los documentos del backend y del cliente compartido.
 
 ## Resultado objetivo
+
+La guía web adoptada es [Modern Web Guidance de Google Chrome](https://github.com/GoogleChrome/modern-web-guidance), disponible en [`.agents/skills/modern-web-guidance/SKILL.md`](../../.agents/skills/modern-web-guidance/SKILL.md). Antes de modificar HTML, CSS o JavaScript del navegador, consultar la skill y buscar/recuperar la orientación específica de la tarea; revisar el resultado contra esa orientación. Priorizar HTML semántico, accesibilidad, rendimiento y capacidades nativas. La compatibilidad por defecto será Baseline Widely available; las APIs más recientes requieren detección de capacidades y alternativas compatibles. Sigue vigente TypeScript estricto sin `any`, aunque aparezca en ejemplos de la guía.
+
+La adopción de esta guía es una decisión de desarrollo, no una implementación de la nueva interfaz ni evidencia de pruebas ejecutadas. La web actual sigue compartiendo `apps/mobile/App.tsx` mediante React Native Web; `apps/web` con React DOM, TypeScript y Vite continúa pendiente. Las reglas nativas de navegación y estilos se mantienen en móvil. El backend C# y la prioridad final de Gmail se conservan.
 
 Web React DOM y móvil React Native CLI tendrán interfaces independientes. Ambos usarán la API ASP.NET Core 10, PostgreSQL y las cuentas del mismo proyecto Supabase Auth. SignalR notificará cambios confirmados y los clientes volverán a consultar los datos autorizados.
 
