@@ -10,7 +10,8 @@ const config = fs.existsSync(file) ? dotenv.parse(fs.readFileSync(file)) : {};
 const environment = { ...process.env };
 for (const name of ['FINANCIA_SUPABASE_URL', 'FINANCIA_SUPABASE_ANON_KEY', 'FINANCIA_API_URL']) environment[name] = process.env[name] ?? config[name] ?? '';
 assertPublicSupabaseKey(environment.FINANCIA_SUPABASE_ANON_KEY);
-const architectures = process.env.FINANCIA_ANDROID_ARCHITECTURES ?? 'arm64-v8a';
+// Some phones use 32-bit Android even when their processor supports ARM64.
+const architectures = process.env.FINANCIA_ANDROID_ARCHITECTURES ?? 'armeabi-v7a,arm64-v8a';
 if (!/^(arm64-v8a|armeabi-v7a|x86_64|x86)(,(arm64-v8a|armeabi-v7a|x86_64|x86))*$/.test(architectures)) throw new Error('Arquitecturas Android no válidas.');
 const digest = createHash('sha256').update(JSON.stringify([
   environment.FINANCIA_SUPABASE_URL, environment.FINANCIA_SUPABASE_ANON_KEY, environment.FINANCIA_API_URL,

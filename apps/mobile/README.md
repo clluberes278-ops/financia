@@ -23,7 +23,7 @@ npm run mobile:apk:docker
 
 El comando usa herramientas oficiales de Google, JDK 17 y Node dentro de Docker. La primera compilación descarga el SDK/NDK y sus dependencias y puede tardar varios minutos. Produce `artifacts/android-preview/financia-preview.apk` y su SHA-256. La variante `preview` incluye JavaScript, usa la firma pública de desarrollo y permite HTTP para pruebas locales. No es una versión para publicar en tiendas.
 
-El Docker de compilación se dirige a Linux amd64 y genera ARM64 por defecto. Para otras CPU configura `FINANCIA_ANDROID_ARCHITECTURES` antes de compilar (por ejemplo `arm64-v8a,x86_64`); los valores admitidos son `armeabi-v7a`, `arm64-v8a`, `x86` y `x86_64`. No instala ni prueba automáticamente el APK en un teléfono.
+El Docker de compilación se dirige a Linux amd64 y genera un APK con ARM de 32 y 64 bits (`armeabi-v7a,arm64-v8a`) por defecto. Esto también cubre teléfonos con procesador de 64 bits que ejecutan Android de 32 bits. Para otras CPU configura `FINANCIA_ANDROID_ARCHITECTURES` antes de compilar (por ejemplo `arm64-v8a,x86_64`); los valores admitidos son `armeabi-v7a`, `arm64-v8a`, `x86` y `x86_64`. `apk-info.txt` contiene los requisitos del APK compilado. No instala ni prueba automáticamente el APK en un teléfono.
 
 Con JDK 17 y Android SDK instalados en el equipo:
 

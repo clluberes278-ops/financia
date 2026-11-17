@@ -1,5 +1,14 @@
 ﻿# Validación de la migración nativa
 
+## APK ARM de 32 y 64 bits — 16 de noviembre de 2026
+
+- El instalador anterior solo incluía ARM64. Ante el fallo genérico de instalación en un Redmi 10A, el build Docker ahora incluye `armeabi-v7a,arm64-v8a` por defecto. La arquitectura del sistema del teléfono y la causa exacta del rechazo aún no se han confirmado.
+- `assemblePreview` terminó correctamente en 8 min 34 s, con 635 tareas. `apksigner verify` pasó y `aapt dump badging` confirmó ambas arquitecturas, `sdkVersion=24` y `com.kal.financia`.
+- Se comprobaron las 17 bibliotecas de cada arquitectura: mismos nombres y cabeceras ELF de 32/64 bits correctas. Ambas incluyen Hermes; el bundle JavaScript está integrado.
+- APK: `artifacts/android-preview/financia-preview.apk`, 53.200.465 bytes. Copia para distinguirlo del instalador anterior: `artifacts/android-preview/financia-preview-arm32-arm64.apk`.
+- SHA-256 comprobado en Windows y Docker: `db4f3c7e2a29d1b18cf9d1edfb84af5005871fe56ae3f1abdfb2fd3dc5f5bce5`. Los requisitos compilados se exportan a `artifacts/android-preview/apk-info.txt`.
+- TypeScript estricto pasó. Sigue pendiente confirmar la instalación y ejecución en el teléfono físico; conserva el modo local del APK anterior.
+
 ## APK del workspace — 16 de noviembre de 2026
 
 - `npm run mobile:apk:docker` completó `assemblePreview` con 625 tareas. Se usaron Node, JDK 17, SDK/NDK oficiales y React Native CLI, sin Expo.

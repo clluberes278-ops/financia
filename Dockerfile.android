@@ -26,7 +26,7 @@ COPY scripts/public-config-plugin.cjs scripts/validate-public-key.cjs ./scripts/
 ARG FINANCIA_SUPABASE_URL
 ARG FINANCIA_API_URL
 ARG PUBLIC_CONFIG_DIGEST
-ARG ANDROID_ARCHITECTURES=arm64-v8a
+ARG ANDROID_ARCHITECTURES=armeabi-v7a,arm64-v8a
 ENV FINANCIA_SUPABASE_URL=${FINANCIA_SUPABASE_URL} FINANCIA_API_URL=${FINANCIA_API_URL}
 WORKDIR /workspace/apps/mobile/android
 RUN --mount=type=secret,id=supabase_public_key,env=FINANCIA_SUPABASE_ANON_KEY,required=true \
@@ -38,5 +38,9 @@ RUN --mount=type=secret,id=supabase_public_key,env=FINANCIA_SUPABASE_ANON_KEY,re
     && ${ANDROID_HOME}/build-tools/36.0.0/apksigner verify /output/financia-preview.apk \
     && unzip -l /output/financia-preview.apk | grep 'assets/index.android.bundle' \
     && cd /output && sha256sum financia-preview.apk > financia-preview.apk.sha256
+RUN ${ANDROID_HOME}/build-tools/36.0.0/aapt dump badging /output/financia-preview.apk > /output/apk-info.txt \
+    && for abi in $(echo "$ANDROID_ARCHITECTURES" | tr ',' ' '); do \
+        unzip -l /output/financia-preview.apk "lib/$abi/libhermesvm.so" | grep "lib/$abi/libhermesvm.so" || exit 1; \
+    done
 FROM scratch AS artifact
 COPY --from=build /output/ /
