@@ -1,0 +1,33 @@
+name: Backend tests
+
+on:
+  push:
+    paths: ['backend/**', 'package.json', 'scripts/run-api.cjs', 'scripts/test-postgres.cjs', '.github/workflows/backend.yml']
+  pull_request:
+    paths: ['backend/**', 'package.json', 'scripts/run-api.cjs', 'scripts/test-postgres.cjs', '.github/workflows/backend.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DOTNET_CLI_HOME: ${{ github.workspace }}/artifacts/dotnet-home
+      NUGET_PACKAGES: ${{ github.workspace }}/artifacts/nuget
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore locked dependencies
+        run: dotnet restore backend/Financia.Api.Tests/Financia.Api.Tests.csproj --locked-mode
+      - name: SQLite HTTP tests
+        run: node scripts/run-api.cjs test --no-restore
+      - name: Isolated PostgreSQL HTTP tests
+        run: npm run api:test:postgres -- --no-restore

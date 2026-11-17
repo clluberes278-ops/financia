@@ -11,6 +11,7 @@ Financia es una aplicación de finanzas personales construida con React Native C
 - Dependencias: `npm install`
 - Backend: `npm run api:start`
 - Pruebas backend: `npm run api:test`
+- Pruebas PostgreSQL aislado (Docker): `npm run api:test:postgres`
 - APK debug: `npm run mobile:apk:debug`
 - APK preview sin Metro: `npm run mobile:apk:preview` (JDK/SDK local) o `npm run mobile:apk:docker`
 - Verificación TypeScript: `npx tsc --noEmit`

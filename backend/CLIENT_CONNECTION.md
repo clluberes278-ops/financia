@@ -72,4 +72,4 @@ Requieren sesión e idempotencia, verifican la revisión de cuenta y guardan tod
 
 ## Estado de validación
 
-Pruebas con almacenamiento, identidad y transportes ficticios; endpoints C# con SQLite temporal; bundles web de producción y JavaScript Android compilados. No equivalen a una prueba OAuth con Gmail, un APK instalado ni concurrencia PostgreSQL real. Antes de usar varias instancias de API, configurar el transporte compartido de SignalR descrito en [API v2](V2.md).
+Pruebas de cliente con almacenamiento, identidad y transportes ficticios; endpoints C# con SQLite temporal y PostgreSQL 18 aislado, incluyendo concurrencia, idempotencia y rollback. Ver [cobertura del backend](TESTING.md). Los bundles web y Android compilan; siguen pendientes OAuth/Gmail reales y el recorrido completo con un APK instalado. Antes de usar varias instancias de API, configurar el transporte compartido de SignalR descrito en [API v2](V2.md).

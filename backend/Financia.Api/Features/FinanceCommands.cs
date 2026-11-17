@@ -18,7 +18,14 @@ internal static partial class FinanceCommands
     internal const decimal MaximumAmount = 999999999999.99m;
     internal static string Number(long value) => value.ToString(CultureInfo.InvariantCulture);
     internal static string Money(decimal value) => value.ToString("0.00", CultureInfo.InvariantCulture);
-    internal static string Timestamp(DateTime value) => DateTime.SpecifyKind(value, DateTimeKind.Utc).ToString("O", CultureInfo.InvariantCulture);
+    internal static DateTime UtcMicroseconds(DateTime value)
+    {
+        // PostgreSQL persists microseconds; .NET also carries 100 ns ticks. Format the
+        // same precision before and after persistence so receipts and reads agree.
+        var utc = DateTime.SpecifyKind(value, DateTimeKind.Utc);
+        return utc.AddTicks(-(utc.Ticks % TimeSpan.TicksPerMicrosecond));
+    }
+    internal static string Timestamp(DateTime value) => UtcMicroseconds(value).ToString("O", CultureInfo.InvariantCulture);
     internal static bool TryAmount(string? value, out decimal amount)
     {
         amount = 0;

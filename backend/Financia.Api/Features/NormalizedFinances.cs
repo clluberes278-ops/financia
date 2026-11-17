@@ -83,14 +83,12 @@ public static class NormalizedFinances
     private static Guid Owner(ClaimsPrincipal user) => Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
     private static string Number(long value) => value.ToString(CultureInfo.InvariantCulture);
     private static string Money(decimal value) => value.ToString("0.00", CultureInfo.InvariantCulture);
-    // SQLite drops DateTime.Kind on reads; all persisted timestamps are UTC.
-    private static string Timestamp(DateTime value) => DateTime.SpecifyKind(value, DateTimeKind.Utc).ToString("O", CultureInfo.InvariantCulture);
 
     internal static V2Movement ToResponse(NormalizedMovement m) => new(m.Id, m.Currency, Money(m.Amount), m.Type, m.Category,
-        Timestamp(m.OccurredAt), m.Note, m.PocketId, Number(m.Version));
+        FinanceCommands.Timestamp(m.OccurredAt), m.Note, m.PocketId, Number(m.Version));
 
     internal static V2Pocket ToResponse(NormalizedPocket p) => new(p.Id, p.Name, p.Currency, Money(p.TargetAmount), Money(p.CurrentAmount),
-        p.Emoji, Timestamp(p.CreatedAt), p.Color, Number(p.Version));
+        p.Emoji, FinanceCommands.Timestamp(p.CreatedAt), p.Color, Number(p.Version));
 
     internal static string? IdempotencyKey(HttpRequest http)
     {
@@ -193,7 +191,7 @@ public static class NormalizedFinances
         // Avoid interpreting zone-less historical dates in the server's local time zone.
         var hasZone = value.EndsWith('Z') || (value.Length >= 6 && value[^3] == ':' && (value[^6] is '+' or '-'));
         if (!hasZone || !DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed)) return false;
-        utc = parsed.UtcDateTime;
+        utc = FinanceCommands.UtcMicroseconds(parsed.UtcDateTime);
         return true;
     }
 }

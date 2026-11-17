@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Xunit;
+using Npgsql;
 
 namespace Financia.Api.Tests;
 
@@ -80,24 +81,57 @@ public class FinanceApiTests
         [new Movement("m1", "DOP", amount, "ingreso", "salario", "2026-11-01T12:00:00Z", null, null)], []);
 }
 
-sealed class ApiFactory(bool financeV2Enabled = true, string? databasePath = null, bool deleteDatabaseOnDispose = true) : WebApplicationFactory<Program>
+sealed class ApiFactory(bool financeV2Enabled = true, string? databasePath = null, bool deleteDatabaseOnDispose = true,
+    Action<IServiceCollection>? configureServices = null) : WebApplicationFactory<Program>
 {
     private readonly string database = databasePath ?? Path.Combine(Path.GetTempPath(), $"financia-test-{Guid.NewGuid()}.db");
+    private string? postgresConnection;
+    private string? ownedPostgresDatabase;
+    private string? adminConnection;
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // An explicit file path is used by the SQLite restart/persistence tests.
+        var configuredPostgres = databasePath is null ? Environment.GetEnvironmentVariable("FINANCIA_TEST_POSTGRES") : null;
+        if (!string.IsNullOrWhiteSpace(configuredPostgres) && ownedPostgresDatabase is null)
+        {
+            var admin = new NpgsqlConnectionStringBuilder(configuredPostgres) { Pooling = false };
+            adminConnection = admin.ConnectionString;
+            var name = "financia_test_" + Guid.NewGuid().ToString("N");
+            using var connection = new NpgsqlConnection(adminConnection);
+            connection.Open();
+            using var command = new NpgsqlCommand($"CREATE DATABASE \"{name}\"", connection);
+            command.ExecuteNonQuery();
+            ownedPostgresDatabase = name;
+            admin.Database = name;
+            postgresConnection = admin.ConnectionString;
+        }
         builder.UseEnvironment("Testing");
         builder.ConfigureLogging(logging => logging.ClearProviders().AddConsole());
         builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?> {
-            ["ConnectionStrings:Sqlite"] = $"Data Source={database};Pooling=False", ["ConnectionStrings:Postgres"] = "",
+            ["ConnectionStrings:Sqlite"] = $"Data Source={database};Pooling=False", ["ConnectionStrings:Postgres"] = postgresConnection ?? "",
             ["FinanceV2:Enabled"] = financeV2Enabled.ToString()
         }));
-        builder.ConfigureTestServices(services => services.AddAuthentication("Test")
-            .AddScheme<AuthenticationSchemeOptions, TestAuthentication>("Test", _ => { }));
+        builder.ConfigureTestServices(services => {
+            services.AddAuthentication("Test").AddScheme<AuthenticationSchemeOptions, TestAuthentication>("Test", _ => { });
+            configureServices?.Invoke(services);
+        });
     }
     public override async ValueTask DisposeAsync()
     {
-        await base.DisposeAsync();
-        if (deleteDatabaseOnDispose) File.Delete(database);
+        try { await base.DisposeAsync(); }
+        finally
+        {
+            if (ownedPostgresDatabase is { } name)
+            {
+                // Never drop the database named in the supplied administrative connection.
+                await using var connection = new NpgsqlConnection(adminConnection);
+                await connection.OpenAsync();
+                await using var command = new NpgsqlCommand($"DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)", connection);
+                await command.ExecuteNonQueryAsync();
+                ownedPostgresDatabase = null;
+            }
+            else if (deleteDatabaseOnDispose) File.Delete(database);
+        }
     }
 }
 

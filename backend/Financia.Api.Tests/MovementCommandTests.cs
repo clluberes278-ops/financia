@@ -15,6 +15,44 @@ public sealed class MovementCommandTests
     private static readonly Guid Alice = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid Bob = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
+    [Theory]
+    [InlineData("2026-11-13T12:00:00.1234567Z", "2026-11-13T12:00:00.1234560Z")]
+    [InlineData("1999-12-31T23:59:59.9999999Z", "1999-12-31T23:59:59.9999990Z")]
+    public async Task SubMicrosecondDatesStayCanonicalAcrossCreateReadEditAndReceiptReplay(string input, string canonical)
+    {
+        await using var factory = new ApiFactory();
+        using var alice = Client(factory, "alice");
+        await Initialize(alice);
+        var body = Body();
+        body["date"] = input;
+        using var createdResponse = await Send(alice, "precise-create", body);
+        var created = await Json(createdResponse);
+        Assert.Equal(canonical, created.GetProperty("movement").GetProperty("date").GetString());
+        using (var read = await alice.GetAsync("/api/v2/finances"))
+        {
+            var snapshot = await Json(read);
+            Assert.Equal(canonical, Assert.Single(snapshot.GetProperty("snapshot").GetProperty("transactions").EnumerateArray()).GetProperty("date").GetString());
+        }
+        var editBody = new { expectedVersion = "1", currency = "DOP", amount = "25.50", type = "ingreso", category = "salario", date = input };
+        async Task<HttpResponseMessage> Edit()
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Patch, Path + "/manual-id") { Content = JsonContent.Create(editBody) };
+            request.Headers.Add("Idempotency-Key", "precise-edit");
+            return await alice.SendAsync(request);
+        }
+        using var editedResponse = await Edit();
+        var edited = await Json(editedResponse);
+        Assert.Equal(canonical, edited.GetProperty("movement").GetProperty("date").GetString());
+        Assert.Equal("25.50", edited.GetProperty("movement").GetProperty("amount").GetString());
+        using var replayedCreate = await Send(alice, "precise-create", body);
+        Assert.True(JsonElement.DeepEquals(created, await Json(replayedCreate)));
+        using var replayedEdit = await Edit();
+        Assert.True(JsonElement.DeepEquals(edited, await Json(replayedEdit)));
+        using var finalRead = await alice.GetAsync("/api/v2/finances");
+        var final = await Json(finalRead);
+        Assert.Equal(canonical, Assert.Single(final.GetProperty("snapshot").GetProperty("transactions").EnumerateArray()).GetProperty("date").GetString());
+    }
+
     [Fact]
     public async Task RequiresAuthenticationInitializationAndEnabledV2()
     {
